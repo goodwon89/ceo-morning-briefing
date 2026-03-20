@@ -31,7 +31,7 @@ GITHUB_BRANCH   = "main"
 
 # 수신자 목록 (그룹사 대표이사)
 EMAIL_RECIPIENTS = [
-    "jangkeunwon@gmail.com",          # 담당자 (테스트용)
+    "kwjang@sangsanginworld.co.kr",          # 담당자 (테스트용)
     # "ceo1@sangsangin.com",          # 계열사1 대표이사
     # "ceo2@sangsangin.com",          # 계열사2 대표이사
     # 추가 수신자 이메일을 여기에 입력하세요
