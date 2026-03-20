@@ -8,70 +8,23 @@ on:
 jobs:
   briefing:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install deps
         run: pip install feedparser
 
-      - name: Run CEO Morning Briefing
+      - name: Run briefing
         env:
-          GMAIL_USER:     ${{ secrets.GMAIL_USER }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
-          GITHUB_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_OWNER:   ${{ github.repository_owner }}
-          GITHUB_REPO:    ${{ github.event.repository.name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
         run: python ceo_morning_briefing.py
-```
-
-**④ "Commit new file" 초록 버튼 클릭**
-
----
-
-## 🔐 STEP 3 — Gmail 비밀번호 등록 (Secrets 설정)
-
-**① 아래 URL 접속:**
-```
-https://github.com/goodwon89/ceo-morning-briefing/settings/secrets/actions
-```
-
-**② "New repository secret" 클릭 → 아래 2개를 각각 추가:**
-
-| Name | Secret |
-|------|--------|
-| `GMAIL_USER` | `jangkeunwon@gmail.com` |
-| `GMAIL_APP_PASS` | xror iqys ssad hngt |
-
-> **Gmail 앱 비밀번호 만드는 법:**
-> Google 계정 → 보안 → 2단계 인증 활성화 → "앱 비밀번호" → 앱: 메일 → 생성 → 16자리 복사
-
----
-
-## 🌐 STEP 4 — GitHub Pages 활성화
-
-**① 아래 URL 접속:**
-```
-https://github.com/goodwon89/ceo-morning-briefing/settings/pages
-```
-
-**② Source 항목에서:**
-- Branch: `main` 선택
-- 폴더: `/ (root)` 선택
-- **Save** 클릭
-
-→ 잠시 후 `https://goodwon89.github.io/ceo-morning-briefing/` 웹페이지가 생성됩니다!
-
----
-
-## ▶️ STEP 5 — 첫 테스트 실행
-
-**① Actions 탭 클릭:**
-```
-https://github.com/goodwon89/ceo-morning-briefing/actions
