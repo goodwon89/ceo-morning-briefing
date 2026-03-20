@@ -12,7 +12,7 @@
 ## GitHub Secrets 설정 필요
 | Secret 이름 | 내용 |
 |------------|------|
-| `GMAIL_USER` | Gmail 주소 (예: jangkeunwon@gmail.com) |
+| `GMAIL_USER` | Gmail 주소 (예: ---------@gmail.com) |
 | `GMAIL_APP_PASS` | Gmail 앱 비밀번호 (16자리) |
 
 ## GitHub Pages 설정
