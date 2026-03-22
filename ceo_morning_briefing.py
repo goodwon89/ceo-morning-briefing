@@ -31,7 +31,7 @@ GITHUB_BRANCH   = "main"
 
 # 수신자 목록 (그룹사 대표이사)
 EMAIL_RECIPIENTS = [
-    "kwjang@sangsanginworld.co.kr",          # 담당자 (테스트용)
+    "jangkeunwon@gmail.com",          # 담당자 (테스트용)
     # "ceo1@sangsangin.com",          # 계열사1 대표이사
     # "ceo2@sangsangin.com",          # 계열사2 대표이사
     # 추가 수신자 이메일을 여기에 입력하세요
@@ -467,13 +467,31 @@ def collect_all_news() -> dict:
 #  ⑥ HTML 이메일 템플릿
 # ─────────────────────────────────────────────
 SECTION_META = {
-    "hr":             {"icon": "👥", "title": "HR / 인사"},
-    "ai":             {"icon": "🤖", "title": "AI / 기술 트렌드"},
-    "startup_invest": {"icon": "💰", "title": "스타트업 · 투자"},
-    "startup_launch": {"icon": "🚀", "title": "스타트업 · 출시 / 성과"},
-    "startup_issue":  {"icon": "📋", "title": "스타트업 · 지원 / 이슈"},
+    "hr":             {"icon": "👥", "title": "HR"},
+    "ai":             {"icon": "🤖", "title": "AI / 기술"},
+    "startup_invest": {"icon": "💰", "title": "투자"},
+    "startup_launch": {"icon": "🚀", "title": "출시 / 성과"},
+    "startup_issue":  {"icon": "📋", "title": "지원 / 이슈"},
 }
 SECTION_ORDER = ["hr", "ai", "startup_invest", "startup_launch", "startup_issue"]
+
+
+# 상상인그룹 로고 SVG (inline, email-safe data URI)
+LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" width="110" height="24">
+  <circle cx="14" cy="24" r="11" fill="#4fc3a1"/>
+  <circle cx="36" cy="24" r="11" fill="#4fc3a1" opacity="0.65"/>
+  <circle cx="58" cy="24" r="11" fill="#4fc3a1" opacity="0.35"/>
+  <text x="76" y="31" font-family="Apple SD Gothic Neo,Malgun Gothic,Arial,sans-serif"
+        font-size="18" font-weight="800" fill="#ffffff" letter-spacing="-0.5">상상인그룹</text>
+</svg>"""
+
+LOGO_SVG_DARK = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" width="110" height="24">
+  <circle cx="14" cy="24" r="11" fill="#4fc3a1"/>
+  <circle cx="36" cy="24" r="11" fill="#4fc3a1" opacity="0.65"/>
+  <circle cx="58" cy="24" r="11" fill="#4fc3a1" opacity="0.35"/>
+  <text x="76" y="31" font-family="Apple SD Gothic Neo,Malgun Gothic,Arial,sans-serif"
+        font-size="18" font-weight="800" fill="#1a1a2e" letter-spacing="-0.5">상상인그룹</text>
+</svg>"""
 
 
 def _article_rows(articles: list[dict]) -> str:
@@ -485,17 +503,18 @@ def _article_rows(articles: list[dict]) -> str:
             pub_date = datetime.fromtimestamp(pub_ts, tz=KST).strftime("%m.%d")
         else:
             pub_date = ""
-        date_src = f"{source} | {pub_date}" if pub_date else source
+        date_src = f"{source} · {pub_date}" if pub_date else source
 
         rows.append(f"""
         <tr>
-          <td style="padding:11px 0 11px 0; border-bottom:1px solid #f0f0f0; vertical-align:top;">
+          <td style="padding:12px 0; border-bottom:1px solid #f2f2f2; vertical-align:top;">
             <a href="{art['short_url']}" target="_blank"
-               style="font-size:14px; color:#1a1a1a; text-decoration:none; line-height:1.55;
-                      font-weight:500; display:block;">
+               style="font-size:14px; color:#1a1a1a; text-decoration:none; line-height:1.6;
+                      font-weight:500; display:block; letter-spacing:-0.1px;">
               {art['title']}
             </a>
-            <span style="font-size:11px; color:#999; margin-top:3px; display:block;">{date_src}</span>
+            <span style="font-size:11px; color:#b0b0b0; margin-top:4px; display:block;
+                         letter-spacing:0.1px;">{date_src}</span>
           </td>
         </tr>""")
     return "\n".join(rows)
@@ -509,11 +528,16 @@ def _section_block(section_key: str, articles: list[dict]) -> str:
     return f"""
     <!-- {meta['title']} 섹션 -->
     <tr>
-      <td style="padding: 28px 0 6px 0;">
-        <span style="display:inline-block; background:#f5f5f5; border-radius:20px;
-                     padding:5px 14px; font-size:13px; font-weight:700; color:#333;">
-          {meta['icon']} {meta['title']}
-        </span>
+      <td style="padding: 24px 0 8px 0;">
+        <table cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="background:#eefaf6; border-radius:8px; padding:4px 12px 4px 10px;">
+              <span style="font-size:12px; font-weight:700; color:#1a7a5e; letter-spacing:0.2px;">
+                {meta['icon']}&nbsp; {meta['title']}
+              </span>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
     <tr>
@@ -527,7 +551,6 @@ def _section_block(section_key: str, articles: list[dict]) -> str:
 
 def build_email_html(sections: dict) -> str:
     today_str = datetime.now(KST).strftime("%Y.%m.%d (%a)")
-    day_map = {"Mon":"Mon","Tue":"Tue","Wed":"Wed","Thu":"Thu","Fri":"Fri","Sat":"Sat","Sun":"Sun"}
     for en, ko in [("Mon","월"),("Tue","화"),("Wed","수"),("Thu","목"),("Fri","금"),("Sat","토"),("Sun","일")]:
         today_str = today_str.replace(en, ko)
 
@@ -543,6 +566,9 @@ def build_email_html(sections: dict) -> str:
     mailto_unsubscribe = f"mailto:{GMAIL_USER}?subject={unsubscribe_subject}&body={unsubscribe_body}"
     pages_url = f"https://{GITHUB_OWNER}.github.io/{GITHUB_REPO}/"
 
+    logo_b64 = base64.b64encode(LOGO_SVG.encode()).decode()
+    logo_data_uri = f"data:image/svg+xml;base64,{logo_b64}"
+
     return f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -550,35 +576,39 @@ def build_email_html(sections: dict) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CEO Morning Briefing</title>
 </head>
-<body style="margin:0; padding:0; background:#f4f4f4; font-family:'Apple SD Gothic Neo',Malgun Gothic,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f4f4">
+<body style="margin:0; padding:0; background:#f0f0f5; font-family:'Apple SD Gothic Neo',Malgun Gothic,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f0f0f5">
   <tr>
-    <td align="center" style="padding: 24px 16px;">
+    <td align="center" style="padding: 28px 16px 40px;">
 
       <!-- 카드 -->
       <table width="600" cellpadding="0" cellspacing="0" border="0"
-             style="max-width:600px; background:#ffffff; border-radius:12px;
-                    box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+             style="max-width:600px; background:#ffffff; border-radius:18px;
+                    box-shadow:0 4px 24px rgba(0,0,0,0.09); overflow:hidden;">
 
         <!-- 헤더 -->
         <tr>
-          <td style="background:#1a1a2e; border-radius:12px 12px 0 0; padding:30px 36px 24px;">
+          <td style="background:#1a1a2e; padding:28px 36px 22px;">
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td>
-                  <div style="font-size:20px; font-weight:800; color:#ffffff; letter-spacing:-0.3px;">
-                    CEO Morning Briefing
+                <td style="vertical-align:middle;">
+                  <!-- 로고 -->
+                  <img src="{logo_data_uri}" width="110" height="24" alt="상상인그룹"
+                       style="display:block; border:0; margin-bottom:10px;">
+                  <div style="font-size:11px; font-weight:600; color:#4fc3a1;
+                               letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px;">
+                    CEO MORNING BRIEFING
                   </div>
-                  <div style="font-size:12px; color:#aaa; margin-top:4px;">
-                    {today_str} &nbsp;|&nbsp; 상상인그룹 인재경영실
+                  <div style="font-size:12px; color:#888; margin-top:2px;">
+                    {today_str}
                   </div>
                 </td>
-                <td align="right" style="vertical-align:middle;">
+                <td align="right" style="vertical-align:top;">
                   <a href="{mailto_subscribe}"
                      style="display:inline-block; padding:7px 16px; border:1.5px solid #4fc3a1;
-                            border-radius:20px; color:#4fc3a1; font-size:12px;
-                            text-decoration:none; font-weight:600;">
-                    ✉️ 구독 신청
+                            border-radius:20px; color:#4fc3a1; font-size:11px;
+                            text-decoration:none; font-weight:600; white-space:nowrap;">
+                    구독 신청
                   </a>
                 </td>
               </tr>
@@ -586,9 +616,14 @@ def build_email_html(sections: dict) -> str:
           </td>
         </tr>
 
+        <!-- 구분선 accent -->
+        <tr>
+          <td style="height:3px; background:linear-gradient(90deg,#4fc3a1,#1a1a2e);"></td>
+        </tr>
+
         <!-- 본문 -->
         <tr>
-          <td style="padding: 8px 36px 12px;">
+          <td style="padding: 8px 36px 20px;">
             <table width="100%" cellpadding="0" cellspacing="0">
               {all_sections_html}
             </table>
@@ -598,48 +633,48 @@ def build_email_html(sections: dict) -> str:
         <!-- 구분선 -->
         <tr>
           <td style="padding:0 36px;">
-            <hr style="border:none; border-top:1px solid #eeeeee; margin:0;">
+            <hr style="border:none; border-top:1px solid #f0f0f0; margin:0;">
           </td>
         </tr>
 
         <!-- 푸터 -->
         <tr>
-          <td style="padding:20px 36px 28px; text-align:center;">
+          <td style="padding:22px 36px 28px; background:#fafafa; border-radius:0 0 18px 18px;">
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td align="center" style="padding-bottom:12px;">
+                <td align="center" style="padding-bottom:14px;">
                   <a href="{mailto_subscribe}"
-                     style="display:inline-block; padding:9px 20px;
-                            background:#4fc3a1; border-radius:20px;
+                     style="display:inline-block; padding:10px 22px;
+                            background:#4fc3a1; border-radius:22px;
                             color:#ffffff; font-size:13px; font-weight:700;
-                            text-decoration:none; margin-right:8px;">
-                    ✉️ 구독 신청
+                            text-decoration:none; margin-right:8px; letter-spacing:-0.2px;">
+                    구독 신청
                   </a>
                   <a href="{mailto_unsubscribe}"
-                     style="display:inline-block; padding:9px 20px;
-                            border:1.5px solid #ccc; border-radius:20px;
-                            color:#666; font-size:13px; font-weight:600;
-                            text-decoration:none;">
+                     style="display:inline-block; padding:10px 22px;
+                            border:1.5px solid #ddd; border-radius:22px;
+                            color:#888; font-size:13px; font-weight:600;
+                            text-decoration:none; letter-spacing:-0.2px;">
                     구독 취소
                   </a>
                 </td>
               </tr>
               <tr>
-                <td align="center">
+                <td align="center" style="padding-bottom:8px;">
                   <a href="https://ssihr.oopy.io" target="_blank"
-                     style="font-size:12px; color:#4fc3a1; text-decoration:none;">
-                    👋 인재경영실 소개
+                     style="font-size:12px; color:#4fc3a1; text-decoration:none; margin:0 10px;">
+                    인재경영실 소개
                   </a>
-                  &nbsp;&nbsp;
+                  <span style="color:#ddd;">|</span>
                   <a href="{pages_url}" target="_blank"
-                     style="font-size:12px; color:#999; text-decoration:none;">
-                    🌐 웹사이트
+                     style="font-size:12px; color:#999; text-decoration:none; margin:0 10px;">
+                    웹사이트
                   </a>
                 </td>
               </tr>
               <tr>
-                <td align="center" style="padding-top:10px;">
-                  <span style="font-size:11px; color:#bbb;">
+                <td align="center">
+                  <span style="font-size:11px; color:#c0c0c0; letter-spacing:0.2px;">
                     매일 오전 9시 자동 발송 · 상상인그룹 인재경영실
                   </span>
                 </td>
@@ -723,12 +758,11 @@ def _push_file_to_github(filepath: str, content_bytes: bytes, commit_msg: str):
 
 
 def build_github_page_html(sections: dict) -> str:
-    """GitHub Pages 전용 HTML (index.html 내 최신 브리핑 삽입)"""
-    today_str = datetime.now(KST).strftime("%Y.%m.%d")
+    """GitHub Pages 전용 HTML (index.html 내 최신 브리핑 삽입) — Apple-style"""
+    today_str = datetime.now(KST).strftime("%Y.%m.%d (%a)")
     for en, ko in [("Mon","월"),("Tue","화"),("Wed","수"),("Thu","목"),("Fri","금"),("Sat","토"),("Sun","일")]:
         today_str = today_str.replace(en, ko)
 
-    pages_url = f"https://{GITHUB_OWNER}.github.io/{GITHUB_REPO}/"
     subscribe_subject   = urllib.parse.quote("CEO Morning Briefing 구독 신청")
     subscribe_body      = urllib.parse.quote("안녕하세요,\n\nCEO Morning Briefing 구독을 신청합니다.\n\n이메일 주소: ")
     unsubscribe_subject = urllib.parse.quote("CEO Morning Briefing 구독 취소")
@@ -747,7 +781,7 @@ def build_github_page_html(sections: dict) -> str:
             source = art.get("source", "")
             pub_ts = art.get("pub_time", 0)
             pub_date = datetime.fromtimestamp(pub_ts, tz=KST).strftime("%m.%d") if pub_ts else ""
-            date_src = f"{source} | {pub_date}" if pub_date else source
+            date_src = f"{source} · {pub_date}" if pub_date else source
             items_html += f"""
               <div class="article-item">
                 <a href="{art['short_url']}" target="_blank" rel="noopener">{art['title']}</a>
@@ -755,7 +789,7 @@ def build_github_page_html(sections: dict) -> str:
               </div>"""
         sections_html_parts.append(f"""
           <div class="section-block">
-            <div class="section-tag">{meta['icon']} {meta['title']}</div>
+            <div class="section-tag">{meta['icon']}&nbsp; {meta['title']}</div>
             {items_html}
           </div>""")
 
@@ -770,67 +804,85 @@ def build_github_page_html(sections: dict) -> str:
 <title>CEO Morning Briefing | 상상인그룹</title>
 <style>
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{ background: #f2f2f7; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-          color: #1a1a1a; }}
-  .wrap {{ max-width: 680px; margin: 0 auto; padding: 20px 16px 60px; }}
+  body {{ background: #f0f0f5; font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+          color: #1a1a1a; -webkit-font-smoothing: antialiased; }}
+  .wrap {{ max-width: 680px; margin: 0 auto; padding: 24px 16px 64px; }}
 
   /* 헤더 */
-  .header {{ background: #1a1a2e; border-radius: 14px; padding: 28px 32px 24px;
-             margin-bottom: 20px; }}
+  .header {{
+    background: #1a1a2e; border-radius: 18px; padding: 28px 32px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(26,26,46,0.18);
+  }}
+  .header-accent {{
+    height: 3px; background: linear-gradient(90deg, #4fc3a1 0%, #1a7a5e 100%);
+    border-radius: 0 0 4px 4px; margin: 0 0 20px 0;
+  }}
+  .logo-svg {{ display: block; margin-bottom: 12px; }}
+  .header-label {{
+    font-size: 10px; font-weight: 700; color: #4fc3a1;
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px;
+  }}
+  .header-date {{ font-size: 12px; color: #888; }}
   .header-top {{ display: flex; justify-content: space-between; align-items: flex-start; }}
-  .header h1 {{ font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }}
-  .header .sub {{ font-size: 12px; color: #aaa; margin-top: 5px; }}
   .btn-subscribe {{
-    display: inline-block; padding: 7px 16px;
-    border: 1.5px solid #4fc3a1; border-radius: 20px;
+    display: inline-block; padding: 8px 18px;
+    border: 1.5px solid #4fc3a1; border-radius: 22px;
     color: #4fc3a1; font-size: 12px; font-weight: 600;
     text-decoration: none; white-space: nowrap;
+    transition: all 0.2s;
   }}
+  .btn-subscribe:hover {{ background: #4fc3a1; color: #fff; }}
 
   /* 카드 */
-  .card {{ background: #fff; border-radius: 12px; padding: 24px 28px;
-           box-shadow: 0 1px 6px rgba(0,0,0,0.07); margin-bottom: 14px; }}
+  .card {{
+    background: #fff; border-radius: 16px; padding: 24px 28px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 16px;
+  }}
 
   /* 섹션 */
-  .section-block {{ margin-bottom: 24px; }}
+  .section-block {{ margin-bottom: 28px; }}
   .section-block:last-child {{ margin-bottom: 0; }}
   .section-tag {{
-    display: inline-block; background: #f5f5f5; border-radius: 20px;
-    padding: 5px 14px; font-size: 13px; font-weight: 700; color: #333;
-    margin-bottom: 10px;
+    display: inline-block; background: #eefaf6; border-radius: 8px;
+    padding: 4px 12px; font-size: 12px; font-weight: 700; color: #1a7a5e;
+    margin-bottom: 12px; letter-spacing: 0.2px;
   }}
 
   /* 기사 */
-  .article-item {{ padding: 10px 0; border-bottom: 1px solid #f0f0f0; }}
+  .article-item {{ padding: 11px 0; border-bottom: 1px solid #f2f2f2; }}
   .article-item:last-child {{ border-bottom: none; }}
   .article-item a {{
     display: block; font-size: 14px; color: #1a1a1a; text-decoration: none;
-    font-weight: 500; line-height: 1.55;
+    font-weight: 500; line-height: 1.6; letter-spacing: -0.1px;
   }}
   .article-item a:hover {{ color: #4fc3a1; }}
-  .article-meta {{ display: block; font-size: 11px; color: #999; margin-top: 3px; }}
+  .article-meta {{ display: block; font-size: 11px; color: #b0b0b0; margin-top: 4px; letter-spacing: 0.1px; }}
 
   /* 푸터 */
-  .footer {{ text-align: center; padding: 24px 0 8px; }}
-  .footer-btns {{ margin-bottom: 12px; }}
+  .footer {{ text-align: center; padding: 20px 0 8px; }}
+  .footer-btns {{ margin-bottom: 14px; }}
   .btn-fill {{
-    display: inline-block; padding: 9px 22px; background: #4fc3a1;
-    border-radius: 20px; color: #fff; font-size: 13px; font-weight: 700;
-    text-decoration: none; margin-right: 8px;
+    display: inline-block; padding: 10px 24px; background: #4fc3a1;
+    border-radius: 22px; color: #fff; font-size: 13px; font-weight: 700;
+    text-decoration: none; margin-right: 8px; letter-spacing: -0.2px;
+    box-shadow: 0 2px 8px rgba(79,195,161,0.3);
   }}
+  .btn-fill:hover {{ background: #3aaf8d; }}
   .btn-outline {{
-    display: inline-block; padding: 9px 22px; border: 1.5px solid #ccc;
-    border-radius: 20px; color: #666; font-size: 13px; font-weight: 600;
-    text-decoration: none;
+    display: inline-block; padding: 10px 24px; border: 1.5px solid #ddd;
+    border-radius: 22px; color: #888; font-size: 13px; font-weight: 600;
+    text-decoration: none; letter-spacing: -0.2px;
   }}
   .footer-links {{ font-size: 12px; margin-bottom: 10px; }}
-  .footer-links a {{ color: #4fc3a1; text-decoration: none; margin: 0 8px; }}
-  .footer-note {{ font-size: 11px; color: #bbb; }}
+  .footer-links a {{ color: #4fc3a1; text-decoration: none; margin: 0 10px; }}
+  .footer-links a:hover {{ text-decoration: underline; }}
+  .footer-sep {{ color: #ddd; }}
+  .footer-note {{ font-size: 11px; color: #c0c0c0; letter-spacing: 0.2px; }}
 
   @media (max-width: 480px) {{
-    .header {{ padding: 20px 18px; }}
-    .card {{ padding: 18px 16px; }}
-    .header h1 {{ font-size: 18px; }}
+    .header {{ padding: 22px 20px 18px; border-radius: 14px; }}
+    .card {{ padding: 20px 18px; border-radius: 14px; }}
   }}
 </style>
 </head>
@@ -841,10 +893,17 @@ def build_github_page_html(sections: dict) -> str:
   <div class="header">
     <div class="header-top">
       <div>
-        <h1>CEO Morning Briefing</h1>
-        <div class="sub">{today_str} &nbsp;|&nbsp; 상상인그룹 인재경영실</div>
+        <svg class="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 40" width="110" height="20">
+          <circle cx="12" cy="20" r="9" fill="#4fc3a1"/>
+          <circle cx="30" cy="20" r="9" fill="#4fc3a1" opacity="0.65"/>
+          <circle cx="48" cy="20" r="9" fill="#4fc3a1" opacity="0.35"/>
+          <text x="64" y="26" font-family="-apple-system,Apple SD Gothic Neo,Malgun Gothic,Arial,sans-serif"
+                font-size="15" font-weight="800" fill="#ffffff" letter-spacing="-0.3">상상인그룹</text>
+        </svg>
+        <div class="header-label">CEO MORNING BRIEFING</div>
+        <div class="header-date">{today_str}</div>
       </div>
-      <a href="{mailto_subscribe}" class="btn-subscribe">✉️ 구독 신청</a>
+      <a href="{mailto_subscribe}" class="btn-subscribe">구독 신청</a>
     </div>
   </div>
 
@@ -856,12 +915,13 @@ def build_github_page_html(sections: dict) -> str:
   <!-- 푸터 -->
   <div class="footer">
     <div class="footer-btns">
-      <a href="{mailto_subscribe}" class="btn-fill">✉️ 구독 신청</a>
+      <a href="{mailto_subscribe}" class="btn-fill">구독 신청</a>
       <a href="{mailto_unsubscribe}" class="btn-outline">구독 취소</a>
     </div>
     <div class="footer-links">
-      <a href="https://ssihr.oopy.io" target="_blank">👋 인재경영실 소개</a>
-      <a href="#top">↑ 맨 위로</a>
+      <a href="https://ssihr.oopy.io" target="_blank">인재경영실 소개</a>
+      <span class="footer-sep">|</span>
+      <a href="#top">맨 위로</a>
     </div>
     <div class="footer-note">매일 오전 9시 자동 발송 · 상상인그룹 인재경영실</div>
   </div>
