@@ -22,19 +22,16 @@ import urllib.request
 # ─────────────────────────────────────────────
 #  ① 사용자 설정 (GitHub Actions Secrets로 주입)
 # ─────────────────────────────────────────────
-GMAIL_USER      = os.environ.get("GMAIL_USER", "jangkeunwon@gmail.com")
+GMAIL_USER      = os.environ.get("GMAIL_USER", "")
 GMAIL_APP_PASS  = os.environ.get("GMAIL_APP_PASS", "")          # Gmail 앱 비밀번호
 GITHUB_TOKEN    = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_OWNER    = os.environ.get("GITHUB_OWNER", "goodwon89")
 GITHUB_REPO     = os.environ.get("GITHUB_REPO", "ceo-morning-briefing")
 GITHUB_BRANCH   = "main"
 
-# 수신자 목록 (그룹사 대표이사)
+# 수신자 목록 — GitHub Secrets의 EMAIL_RECIPIENTS (쉼표 구분)으로 관리
 EMAIL_RECIPIENTS = [
-    "jangkeunwon@gmail.com",          # 담당자 (테스트용)
-    # "ceo1@sangsangin.com",          # 계열사1 대표이사
-    # "ceo2@sangsangin.com",          # 계열사2 대표이사
-    # 추가 수신자 이메일을 여기에 입력하세요
+    e.strip() for e in os.environ.get("EMAIL_RECIPIENTS", "").split(",") if e.strip()
 ]
 
 # 뉴스 아카이브 파일 (GitHub repo 내)
