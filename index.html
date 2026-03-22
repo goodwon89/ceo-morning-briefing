@@ -7,76 +7,74 @@
 <title>CEO Morning Briefing | 상상인그룹</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #f0f0f5;
-    font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-    color: #1a1a1a;
-    -webkit-font-smoothing: antialiased;
-  }
+  body { background: #f0f0f5; font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+          color: #1a1a1a; -webkit-font-smoothing: antialiased; }
   .wrap { max-width: 680px; margin: 0 auto; padding: 24px 16px 64px; }
 
   /* 헤더 */
   .header {
-    background: #1a1a2e;
-    border-radius: 18px;
-    padding: 28px 32px 24px;
+    background: #1a1a2e; border-radius: 18px; padding: 28px 32px 24px;
     margin-bottom: 16px;
     box-shadow: 0 4px 20px rgba(26,26,46,0.18);
   }
-  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .header-accent {
+    height: 3px; background: linear-gradient(90deg, #4fc3a1 0%, #1a7a5e 100%);
+    border-radius: 0 0 4px 4px; margin: 0 0 20px 0;
+  }
   .logo-svg { display: block; margin-bottom: 12px; }
   .header-label {
     font-size: 10px; font-weight: 700; color: #4fc3a1;
     letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px;
   }
   .header-date { font-size: 12px; color: #888; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
   .btn-subscribe {
     display: inline-block; padding: 8px 18px;
     border: 1.5px solid #4fc3a1; border-radius: 22px;
     color: #4fc3a1; font-size: 12px; font-weight: 600;
     text-decoration: none; white-space: nowrap;
+    transition: all 0.2s;
   }
   .btn-subscribe:hover { background: #4fc3a1; color: #fff; }
 
   /* 카드 */
   .card {
-    background: #fff; border-radius: 16px; padding: 40px 32px;
+    background: #fff; border-radius: 16px; padding: 24px 28px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 16px;
-    text-align: center;
-  }
-  .card-icon { font-size: 48px; margin-bottom: 20px; display: block; }
-  .card h2 {
-    font-size: 20px; font-weight: 800; color: #1a1a2e;
-    letter-spacing: -0.4px; margin-bottom: 14px;
-  }
-  .card p { font-size: 15px; color: #555; line-height: 1.75; }
-  .card .highlight { color: #1a7a5e; font-weight: 700; }
-  .card .sub-note {
-    font-size: 13px; color: #b0b0b0; margin-top: 20px;
-    padding-top: 18px; border-top: 1px solid #f2f2f2;
   }
 
-  /* 섹션 배지 미리보기 */
-  .badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 20px; }
-  .badge {
+  /* 섹션 */
+  .section-block { margin-bottom: 28px; }
+  .section-block:last-child { margin-bottom: 0; }
+  .section-tag {
     display: inline-block; background: #eefaf6; border-radius: 8px;
-    padding: 5px 14px; font-size: 12px; font-weight: 700; color: #1a7a5e;
-    letter-spacing: 0.2px;
+    padding: 4px 12px; font-size: 12px; font-weight: 700; color: #1a7a5e;
+    margin-bottom: 12px; letter-spacing: 0.2px;
   }
+
+  /* 기사 */
+  .article-item { padding: 11px 0; border-bottom: 1px solid #f2f2f2; }
+  .article-item:last-child { border-bottom: none; }
+  .article-item a {
+    display: block; font-size: 14px; color: #1a1a1a; text-decoration: none;
+    font-weight: 500; line-height: 1.6; letter-spacing: -0.1px;
+  }
+  .article-item a:hover { color: #4fc3a1; }
+  .article-meta { display: block; font-size: 11px; color: #b0b0b0; margin-top: 4px; letter-spacing: 0.1px; }
 
   /* 푸터 */
   .footer { text-align: center; padding: 20px 0 8px; }
   .footer-btns { margin-bottom: 14px; }
   .btn-fill {
-    display: inline-block; padding: 11px 26px; background: #4fc3a1;
-    border-radius: 22px; color: #fff; font-size: 14px; font-weight: 700;
+    display: inline-block; padding: 10px 24px; background: #4fc3a1;
+    border-radius: 22px; color: #fff; font-size: 13px; font-weight: 700;
     text-decoration: none; margin-right: 8px; letter-spacing: -0.2px;
     box-shadow: 0 2px 8px rgba(79,195,161,0.3);
   }
   .btn-fill:hover { background: #3aaf8d; }
   .btn-outline {
-    display: inline-block; padding: 11px 26px; border: 1.5px solid #ddd;
-    border-radius: 22px; color: #888; font-size: 14px; font-weight: 600;
+    display: inline-block; padding: 10px 24px; border: 1.5px solid #ddd;
+    border-radius: 22px; color: #888; font-size: 13px; font-weight: 600;
     text-decoration: none; letter-spacing: -0.2px;
   }
   .footer-links { font-size: 12px; margin-bottom: 10px; }
@@ -87,8 +85,7 @@
 
   @media (max-width: 480px) {
     .header { padding: 22px 20px 18px; border-radius: 14px; }
-    .card { padding: 28px 20px; border-radius: 14px; }
-    .btn-fill, .btn-outline { padding: 10px 20px; font-size: 13px; }
+    .card { padding: 20px 18px; border-radius: 14px; }
   }
 </style>
 </head>
@@ -107,40 +104,98 @@
                 font-size="15" font-weight="800" fill="#ffffff" letter-spacing="-0.3">상상인그룹</text>
         </svg>
         <div class="header-label">CEO MORNING BRIEFING</div>
-        <div class="header-date">상상인그룹 인재경영실</div>
+        <div class="header-date">2026.03.23 (월)</div>
       </div>
-      <a href="mailto:jangkeunwon@gmail.com?subject=CEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%20%EC%8B%A0%EC%B2%AD&body=%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94%2C%0A%0ACEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%EC%9D%84%20%EC%8B%A0%EC%B2%AD%ED%95%A9%EB%8B%88%EB%8B%A4.%0A%0A%EC%9D%B4%EB%A9%94%EC%9D%BC%20%EC%A3%BC%EC%86%8C%3A%20"
-         class="btn-subscribe">구독 신청</a>
+      <a href="mailto:jangkeunwon@gmail.com?subject=CEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%20%EC%8B%A0%EC%B2%AD&body=%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94%2C%0A%0ACEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%EC%9D%84%20%EC%8B%A0%EC%B2%AD%ED%95%A9%EB%8B%88%EB%8B%A4.%0A%0A%EC%9D%B4%EB%A9%94%EC%9D%BC%20%EC%A3%BC%EC%86%8C%3A%20" class="btn-subscribe">구독 신청</a>
     </div>
   </div>
 
-  <!-- 소개 카드 -->
+  <!-- 뉴스 카드 -->
   <div class="card">
-    <span class="card-icon">📬</span>
-    <h2>그룹사 대표이사를 위한 맞춤 뉴스 브리핑</h2>
-    <p>
-      매일 오전 9시, <span class="highlight">HR · AI / 기술 · 스타트업</span> 분야의<br>
-      주요 뉴스를 자동 수집하여 이메일로 발송합니다.
-    </p>
-    <div class="badges">
-      <span class="badge">👥 HR</span>
-      <span class="badge">🤖 AI / 기술</span>
-      <span class="badge">💰 투자</span>
-      <span class="badge">🚀 출시 / 성과</span>
-      <span class="badge">📋 지원 / 이슈</span>
-    </div>
-    <p class="sub-note">
-      첫 번째 브리핑은 내일 오전 9시에 발송됩니다.
-    </p>
+    
+          <div class="section-block">
+            <div class="section-tag">👥&nbsp; HR</div>
+            
+              <div class="article-item">
+                <a href="https://tinyurl.com/28edj7wm" target="_blank" rel="noopener">직장인 3명 중 1명 "좋은 일자리 위해선 중소기업 지원 확대해야" - 뉴스1</a>
+                <span class="article-meta">뉴스1 · 03.22</span>
+              </div>
+              <div class="article-item">
+                <a href="https://tinyurl.com/23eq4z2g" target="_blank" rel="noopener">직장인 42% "좋은 일자리 부족, 수도권 편중 탓" - 뉴시스</a>
+                <span class="article-meta">뉴시스 · 03.22</span>
+              </div>
+              <div class="article-item">
+                <a href="https://tinyurl.com/242c6cmp" target="_blank" rel="noopener">‘연봉 깜깜이’ 공고 줄어들까…임금 공개 논의 본격화 - 투데이신문</a>
+                <span class="article-meta">투데이신문 · 03.20</span>
+              </div>
+              <div class="article-item">
+                <a href="https://tinyurl.com/24tqjrgq" target="_blank" rel="noopener">경사노위, 4대 노동법학회와「복합위기 시대, 노동규범 현대화를 위한 정책토론회」개최 - 서울Pn</a>
+                <span class="article-meta">서울Pn · 03.20</span>
+              </div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-tag">🤖&nbsp; AI / 기술</div>
+            
+              <div class="article-item">
+                <a href="https://tinyurl.com/23dnpdt9" target="_blank" rel="noopener">스마트팩토리 시대, 산업 자동화 로봇이 미래 공장 혁신 주도 - 유스연합</a>
+                <span class="article-meta">유스연합 · 03.21</span>
+              </div>
+              <div class="article-item">
+                <a href="https://tinyurl.com/2dcvlqnl" target="_blank" rel="noopener">유럽발 AI·로봇 투자 열풍의 교훈 - 환경감시일보</a>
+                <span class="article-meta">환경감시일보 · 03.21</span>
+              </div>
+              <div class="article-item">
+                <a href="https://tinyurl.com/26aomwot" target="_blank" rel="noopener">우리은행, AX 통해 175개 업무 프로세스 혁신...일하고 해결하는 AI로의 전환 - 리버티코리아포스트</a>
+                <span class="article-meta">리버티코리아포스트 · 03.20</span>
+              </div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-tag">💰&nbsp; 투자</div>
+            
+              <div class="article-item">
+                <a href="https://tinyurl.com/2csoyncf" target="_blank" rel="noopener">직방, 기업가치 90% 급락…프롭테크 유니콘 신화 흔들 - 서울경제TV</a>
+                <span class="article-meta">서울경제TV · 03.20</span>
+              </div>
+              <div class="article-item">
+                <a href="https://tinyurl.com/272r9p58" target="_blank" rel="noopener">글로벌 엑셀러레이터 육성사업 선정 결과 - 서울Pn</a>
+                <span class="article-meta">서울Pn · 03.19</span>
+              </div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-tag">🚀&nbsp; 출시 / 성과</div>
+            
+              <div class="article-item">
+                <a href="https://tinyurl.com/2bx55uhf" target="_blank" rel="noopener">한류 마케팅 강화하고 중소벤처기업 수출 총력 지원 - 서울Pn</a>
+                <span class="article-meta">서울Pn · 03.19</span>
+              </div>
+              <div class="article-item">
+                <a href="https://tinyurl.com/24hqgxd7" target="_blank" rel="noopener">머스크 ‘X Money’ 베타 공개, 연 6% 이자 앞세워 결제 시장 정조준 - 비온미디어</a>
+                <span class="article-meta">비온미디어 · 03.16</span>
+              </div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-tag">📋&nbsp; 지원 / 이슈</div>
+            
+              <div class="article-item">
+                <a href="https://tinyurl.com/2yagyxnw" target="_blank" rel="noopener">충북도, 청년 창업생태계 활성화 간담회 개최 - 이뉴스투데이</a>
+                <span class="article-meta">이뉴스투데이 · 03.18</span>
+              </div>
+              <div class="article-item">
+                <a href="https://tinyurl.com/24l7lrx3" target="_blank" rel="noopener">금천구, 청년 창업 역량 강화 '창업 시드 캠프' 성료 - 피디언뉴스</a>
+                <span class="article-meta">피디언뉴스 · 03.18</span>
+              </div>
+          </div>
   </div>
 
   <!-- 푸터 -->
   <div class="footer">
     <div class="footer-btns">
-      <a href="mailto:jangkeunwon@gmail.com?subject=CEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%20%EC%8B%A0%EC%B2%AD&body=%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94%2C%0A%0ACEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%EC%9D%84%20%EC%8B%A0%EC%B2%AD%ED%95%A9%EB%8B%88%EB%8B%A4.%0A%0A%EC%9D%B4%EB%A9%94%EC%9D%BC%20%EC%A3%BC%EC%86%8C%3A%20"
-         class="btn-fill">구독 신청</a>
-      <a href="mailto:jangkeunwon@gmail.com?subject=CEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%20%EC%B7%A8%EC%86%8C&body=%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94%2C%0A%0ACEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%20%EC%B7%A8%EC%86%8C%EB%A5%BC%20%EC%9A%94%EC%B2%AD%ED%95%A9%EB%8B%88%EB%8B%A4.%0A%0A%EC%9D%B4%EB%A9%94%EC%9D%BC%20%EC%A3%BC%EC%86%8C%3A%20"
-         class="btn-outline">구독 취소</a>
+      <a href="mailto:jangkeunwon@gmail.com?subject=CEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%20%EC%8B%A0%EC%B2%AD&body=%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94%2C%0A%0ACEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%EC%9D%84%20%EC%8B%A0%EC%B2%AD%ED%95%A9%EB%8B%88%EB%8B%A4.%0A%0A%EC%9D%B4%EB%A9%94%EC%9D%BC%20%EC%A3%BC%EC%86%8C%3A%20" class="btn-fill">구독 신청</a>
+      <a href="mailto:jangkeunwon@gmail.com?subject=CEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%20%EC%B7%A8%EC%86%8C&body=%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94%2C%0A%0ACEO%20Morning%20Briefing%20%EA%B5%AC%EB%8F%85%EC%9D%84%20%EC%B7%A8%EC%86%8C%20%EC%9A%94%EC%B2%AD%ED%95%A9%EB%8B%88%EB%8B%A4.%0A%0A%EC%9D%B4%EB%A9%94%EC%9D%BC%20%EC%A3%BC%EC%86%8C%3A%20" class="btn-outline">구독 취소</a>
     </div>
     <div class="footer-links">
       <a href="https://ssihr.oopy.io" target="_blank">인재경영실 소개</a>
