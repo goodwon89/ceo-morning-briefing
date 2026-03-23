@@ -147,8 +147,10 @@ def _parse_pub_time(entry) -> float:
 
 
 def normalize_title(title: str) -> str:
-    """제목 정규화 (표기 통일만, 의미 변경 X)"""
+    """제목 정규화 — 출처 suffix 및 불필요 기호 제거"""
     title = re.sub(r"\[.*?\]|\(.*?\)", "", title)
+    # Google News RSS 제목 끝 " - 출처명" 제거
+    title = re.sub(r"\s*-\s*[^-]+$", "", title)
     title = re.sub(r"\s+", " ", title).strip()
     return title
 
