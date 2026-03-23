@@ -43,8 +43,8 @@ ARCHIVE_DAYS     = 3       # 과거 N일 아카이브 중복 방지
 
 # 섹션별 목표 기사 수 (카테고리별 최소 4건)
 TARGET = {
-    "hr":              4,   # HR/인사
-    "ai":              4,   # AI/기술트렌드
+    "hr":               4,   # HR/인사
+    "ai":               4,   # AI/기술트렌드
     "startup_invest":  4,   # 스타트업 투자
     "startup_launch":  4,   # 스타트업 출시/성과
     "startup_issue":   4,   # 스타트업 지원/이슈
@@ -509,8 +509,8 @@ def collect_all_news() -> dict:
 #  ⑥ HTML 이메일 템플릿
 # ─────────────────────────────────────────────
 SECTION_META = {
-    "hr":             {"icon": "👥", "title": "HR",          "desc": "인사기획 · 평가 · 조직문화 · 노동법 핵심 이슈"},
-    "ai":             {"icon": "🤖", "title": "AI / 기술",    "desc": "AI · 디지털 전환이 기업과 HR에 미치는 영향"},
+    "hr":               {"icon": "👥", "title": "HR",          "desc": "인사기획 · 평가 · 조직문화 · 노동법 핵심 이슈"},
+    "ai":               {"icon": "🤖", "title": "AI / 기술",    "desc": "AI · 디지털 전환이 기업과 HR에 미치는 영향"},
     "startup_invest": {"icon": "💰", "title": "투자",         "desc": "국내 스타트업 투자 · VC · IPO 동향"},
     "startup_launch": {"icon": "🚀", "title": "출시 / 성과",  "desc": "스타트업 신규 서비스 · 해외 진출 · 수상"},
     "startup_issue":  {"icon": "📋", "title": "지원 / 이슈",  "desc": "정부 지원 · 규제 · 창업 생태계 이슈"},
@@ -590,14 +590,17 @@ def build_email_html(sections: dict) -> str:
 
     return f"""<!DOCTYPE html>
 <html lang="ko">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+</head>
 <body style="margin:0; padding:0; background:#f0f2f5;
-             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;">
+             font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f2f5; padding:32px 16px;">
   <tr><td align="center">
     <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%;">
 
-      <!-- 헤더 -->
       <tr>
         <td style="background:#e7f0e9; border-radius:12px 12px 0 0;
                    padding:28px 24px 22px; text-align:center;">
@@ -615,7 +618,6 @@ def build_email_html(sections: dict) -> str:
         </td>
       </tr>
 
-      <!-- 뉴스 목록 -->
       <tr>
         <td style="background:#ffffff;">
           <table width="100%" cellpadding="0" cellspacing="0">
@@ -624,7 +626,6 @@ def build_email_html(sections: dict) -> str:
         </td>
       </tr>
 
-      <!-- 푸터 -->
       <tr>
         <td style="background:#f8f9fa; border-radius:0 0 12px 12px;
                    padding:24px 24px 20px; text-align:center;
@@ -750,11 +751,12 @@ def build_github_page_html() -> str:
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CEO Morning Briefing | 상상인그룹</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
     * {{ box-sizing: border-box; margin: 0; padding: 0; }}
     :root {{ --teal: #1CC9BE; --teal-dk: #17b0a6; --dark: #1a1a2e; --gray-lt: #f0f2f5; }}
     body {{
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI",
                    "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
       background: var(--gray-lt); color: var(--dark); min-height: 100vh;
     }}
