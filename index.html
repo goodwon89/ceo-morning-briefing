@@ -69,7 +69,10 @@
       box-shadow: 0 6px 20px rgba(28,201,190,.15);
       transform: translateY(-2px);
     }
-    .card-top { display: flex; align-items: flex-start; gap: 12px; }
+    .card-top {
+      display: flex; align-items: flex-start; gap: 12px;
+      position: relative;
+    }
     .card-num {
       flex-shrink: 0; width: 26px; height: 26px; background: var(--teal);
       color: var(--dark); border-radius: 50%; font-size: 0.72rem; font-weight: 800;
@@ -78,17 +81,20 @@
     .card-title {
       font-size: 0.93rem; font-weight: 600; line-height: 1.5;
       color: var(--dark); text-decoration: none; word-break: keep-all; flex: 1;
+      padding-right: 4px;
     }
     .card-title:hover { color: var(--teal-dk); text-decoration: underline; }
+    .card-section {
+      flex-shrink: 0; align-self: flex-start; margin-top: 2px;
+      font-size: 0.66rem; font-weight: 700; color: #fff;
+      background: var(--dark); border-radius: 4px; padding: 2px 7px;
+      white-space: nowrap;
+    }
     .card-bottom {
       display: flex; align-items: center; justify-content: space-between;
       padding-top: 6px; border-top: 1px solid #f3f4f6;
     }
     .card-source { font-size: 0.75rem; color: #9ca3af; font-weight: 500; }
-    .card-section {
-      font-size: 0.68rem; font-weight: 700; color: #fff;
-      background: var(--dark); border-radius: 4px; padding: 2px 7px;
-    }
     .card-link {
       font-size: 0.76rem; font-weight: 700; color: var(--dark);
       background: var(--teal); text-decoration: none;
@@ -276,9 +282,9 @@
                 <a class="card-title" href="${n.url}" target="_blank" rel="noopener">
                   ${escHtml(n.title)}
                 </a>
+                <span class="card-section">${SECTION_LABELS[n.section] || ''}</span>
               </div>
               <div class="card-bottom">
-                <span class="card-section">${SECTION_LABELS[n.section] || ''}</span>
                 <span class="card-source">${escHtml(n.source || '')}</span>
                 <a class="card-link" href="${n.url}" target="_blank" rel="noopener">기사 보기 →</a>
               </div>
