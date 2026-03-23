@@ -9,6 +9,8 @@ on:
 jobs:
   briefing:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # 아카이브 저장 및 GitHub Pages 업데이트에 필요
 
     steps:
       - name: Checkout repository
@@ -29,5 +31,5 @@ jobs:
           GITHUB_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
           GITHUB_OWNER:   ${{ github.repository_owner }}
           GITHUB_REPO:    ${{ github.event.repository.name }}
-          EMAIL_RECIPIENTS:  ${{ secrets.EMAIL_RECIPIENTS }} 
+          EMAIL_RECIPIENTS:  ${{ secrets.EMAIL_RECIPIENTS }}
         run: python ceo_morning_briefing.py
