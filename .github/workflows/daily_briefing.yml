@@ -2,33 +2,31 @@ name: CEO Morning Briefing
 
 on:
   schedule:
-    - cron: "0 0 * * 1-5"
-  workflow_dispatch:
-
-permissions:
-  contents: write
+    # 오후 2시 30분 KST = UTC 05:30  (테스트용 임시 스케줄)
+    - cron: "30 5 * * *"    # 매일 오후 2:30 KST
+  workflow_dispatch:          # 수동 실행 버튼
 
 jobs:
   briefing:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install deps
+      - name: Install dependencies
         run: pip install feedparser
 
-      - name: Run briefing
+      - name: Run CEO Morning Briefing
         env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_USER:     ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
-          EMAIL_RECIPIENTS: ${{ secrets.EMAIL_RECIPIENTS }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_OWNER: ${{ github.repository_owner }}
-          GITHUB_REPO: ${{ github.event.repository.name }}
+          GITHUB_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_OWNER:   ${{ github.repository_owner }}
+          GITHUB_REPO:    ${{ github.event.repository.name }}
         run: python ceo_morning_briefing.py
