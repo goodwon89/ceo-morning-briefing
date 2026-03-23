@@ -547,7 +547,7 @@ def build_email_html(sections: dict) -> str:
         # 카테고리 구분 헤더
         news_rows += f"""
         <tr>
-          <td style="padding:14px 20px 10px; background:#f4f6f9; border-bottom:2px solid #1a1a2e;">
+          <td style="padding:14px 20px 10px; background:#FFFFFF; border-bottom:2px solid #1a1a2e;">
             <div style="font-size:13px; font-weight:700; color:#1a1a2e; letter-spacing:0.3px;">
               {meta['icon']}&nbsp;{meta['title']}
             </div>
