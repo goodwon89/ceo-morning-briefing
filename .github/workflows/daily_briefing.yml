@@ -3,7 +3,7 @@ name: CEO Morning Briefing
 on:
   schedule:
     # 오후 2시 30분 KST = UTC 05:30  (테스트용 임시 스케줄)
-    - cron: "30 5 * * *"    # 매일 오후 2:30 KST
+    - cron: "0 0 * * 1-5"    # 매일 오전 9:00 KST
   workflow_dispatch:          # 수동 실행 버튼
 
 jobs:
