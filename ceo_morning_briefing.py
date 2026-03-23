@@ -41,15 +41,15 @@ ARCHIVE_FILE = "news_archive.json"
 NEWS_WINDOW_DAYS = 7       # 최근 N일 기사 수집
 ARCHIVE_DAYS     = 3       # 과거 N일 아카이브 중복 방지
 
-# 섹션별 목표 기사 수
+# 섹션별 목표 기사 수 (카테고리별 최소 4건)
 TARGET = {
     "hr":              4,   # HR/인사
-    "ai":              3,   # AI/기술트렌드
-    "startup_invest":  2,   # 스타트업 투자
-    "startup_launch":  2,   # 스타트업 출시/성과
-    "startup_issue":   2,   # 스타트업 지원/이슈
+    "ai":              4,   # AI/기술트렌드
+    "startup_invest":  4,   # 스타트업 투자
+    "startup_launch":  4,   # 스타트업 출시/성과
+    "startup_issue":   4,   # 스타트업 지원/이슈
 }
-TOTAL_TARGET = sum(TARGET.values())   # 13건
+TOTAL_TARGET = sum(TARGET.values())   # 20건
 
 # ─────────────────────────────────────────────
 #  ② 뉴스 수집 쿼리
@@ -278,18 +278,23 @@ def save_archive(archive: list, new_articles: list):
 
 
 def load_recent_archive_titles(archive: list) -> set:
-    """최근 N일 아카이브에서 이미 발송된 기사 제목 집합 반환"""
+    """최근 N일 아카이브에서 이미 발송된 기사 제목+URL 집합 반환 (이중 중복 방지)"""
     cutoff = (datetime.now(KST) - timedelta(days=ARCHIVE_DAYS)).strftime("%Y-%m-%d")
-    titles = set()
+    keys = set()
     for entry in archive:
         if entry["date"] >= cutoff:
             for item in entry.get("news", []):
                 if isinstance(item, dict):
-                    titles.add(item.get("title", ""))
+                    title = item.get("title", "").strip()
+                    url = item.get("url", "").strip()
+                    if title:
+                        keys.add(title)
+                    if url:
+                        keys.add(url)
                 else:
-                    titles.add(str(item))
-    print(f"[archive] 최근 {ARCHIVE_DAYS}일 기사 {len(titles)}건 중복 방지 로드")
-    return titles
+                    keys.add(str(item))
+    print(f"[archive] 최근 {ARCHIVE_DAYS}일 기사 {len(keys)}건 중복 방지 로드 (제목+URL)")
+    return keys
 
 
 # ─────────────────────────────────────────────
@@ -386,8 +391,11 @@ def fetch_section_news(
     archive_titles: 과거 발송 기록 (중복 방지용)
     """
     all_candidates = _fetch_from_queries(queries)
-    # 아카이브 exact-title 중복 제거
-    all_candidates = [a for a in all_candidates if a["title"] not in archive_titles]
+    # 아카이브 중복 제거 (제목 OR URL 일치 시 제외)
+    all_candidates = [
+        a for a in all_candidates
+        if a["title"] not in archive_titles and a.get("url", "") not in archive_titles
+    ]
 
     result = []
 
@@ -414,7 +422,10 @@ def fetch_section_news(
             f"{q.split()[0]} 뉴스" for q in queries[:3]
         ] + ["스타트업 뉴스", "AI 뉴스", "HR 인사 뉴스"]
         backup_candidates = _fetch_from_queries(backup_queries)
-        backup_candidates = [a for a in backup_candidates if a["title"] not in archive_titles]
+        backup_candidates = [
+            a for a in backup_candidates
+            if a["title"] not in archive_titles and a.get("url", "") not in archive_titles
+        ]
         picked = _pick_articles(backup_candidates, target - len(result), chosen_titles, max_per_source=99, check_topic=False)
         result.extend(picked)
         print(f"[{section_name}] Stage4: {len(result)}/{target}")
@@ -1011,8 +1022,8 @@ def build_github_page_html() -> str:
                 </a>
               </div>
               <div class="card-bottom">
-                <span class="card-source">${{escHtml(n.source || '')}}</span>
                 <span class="card-section">${{SECTION_LABELS[n.section] || ''}}</span>
+                <span class="card-source">${{escHtml(n.source || '')}}</span>
                 <a class="card-link" href="${{n.url}}" target="_blank" rel="noopener">기사 보기 →</a>
               </div>
             </div>
