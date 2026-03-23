@@ -3,81 +3,123 @@
     "date": "2026-03-23",
     "news": [
       {
-        "title": "유럽발 AI·로봇 투자 열풍의 교훈 - 브랜드경제신문",
-        "url": "https://tinyurl.com/2cj4kr8p",
-        "source": "브랜드경제신문",
+        "title": "AI 시대의 새로운 인프라, 우주데이터센터 - 전자신문",
+        "url": "https://tinyurl.com/2d4jxmoy",
+        "source": "전자신문",
         "section": "ai"
       },
       {
-        "title": "이든티앤에스, ‘상용 AI SW Market Fair’ 참가... 공공 문서업무 자동화 ‘에이전틱 AI’ Worktro AgentOps 최초공개 - 한국투데이",
-        "url": "https://tinyurl.com/22dycr7l",
-        "source": "한국투데이",
+        "title": "청주폴리텍대, 피지컬AI 기반 직업 교육혁신 나선다 - 충북일보",
+        "url": "https://tinyurl.com/2cnsafah",
+        "source": "충북일보",
         "section": "ai"
       },
       {
-        "title": "미디어젠, ETRI와 생성형 AI 기술 개발 협력 강화…LLM '미라지' 고도화 - 네이트",
-        "url": "https://tinyurl.com/28737vvs",
+        "title": "인공지능 규제, 한국의 글로벌 리더십은? - 한국공공정책신문",
+        "url": "https://tinyurl.com/28bqukxk",
+        "source": "한국공공정책신문",
+        "section": "ai"
+      },
+      {
+        "title": "스마트팩토리 시대, 산업 자동화 로봇이 미래 공장 혁신 주도 - 유스연합",
+        "url": "https://tinyurl.com/23dnpdt9",
+        "source": "유스연합",
+        "section": "ai"
+      },
+      {
+        "title": "“좋은 일자리 늘리려면 중기 지원 확대를” 33% - 경향신문",
+        "url": "https://tinyurl.com/28ntmvp9",
+        "source": "경향신문",
+        "section": "hr"
+      },
+      {
+        "title": "직장인 3명중 1명 좋은 일자리 위해 \"중기지원 확대\"···고용유연화 12.5% 그쳐 - 네이트",
+        "url": "https://tinyurl.com/272xt247",
         "source": "네이트",
-        "section": "ai"
-      },
-      {
-        "title": "노동장관 \"채용 공고서 산업별 임금정보 공개 추진\" - MSN",
-        "url": "https://tinyurl.com/2a73swzh",
-        "source": "MSN",
         "section": "hr"
       },
       {
-        "title": "李 \"기간제 2년 되면 정규직 전환, 말은 좋은데 되레 장애\" - 네이트",
-        "url": "https://tinyurl.com/27gvaxtm",
+        "title": "직장인 42% “좋은 일자리 부족 원인은 수도권 편중” - hidomin.com",
+        "url": "https://tinyurl.com/227z6j3s",
+        "source": "hidomin.com",
+        "section": "hr"
+      },
+      {
+        "title": "직장인 3명 중 1명 \"좋은 일자리 늘리려면 근로기준법 적용 확대\" - 네이트",
+        "url": "https://tinyurl.com/2ysoac9v",
         "source": "네이트",
         "section": "hr"
       },
       {
-        "title": "채용공고 ‘연봉 비공개’ 관행 손본다 - v.daum.net",
-        "url": "https://tinyurl.com/2bm4b8wr",
-        "source": "v.daum.net",
-        "section": "hr"
-      },
-      {
-        "title": "이재명 대통령이 ‘채용 공고’에 의문 제기했다, “채용하는데 월급 안 가르쳐주는 건 문제” - 허프포스트코리아",
-        "url": "https://tinyurl.com/28utujgf",
-        "source": "허프포스트코리아",
-        "section": "hr"
-      },
-      {
-        "title": "한벤투 R&D매칭 3호 공고…우수기업 발굴 VC 매칭 - 딜사이트",
-        "url": "https://tinyurl.com/25munubq",
-        "source": "딜사이트",
+        "title": "K뷰티 다음 타자는…투자 몰리는 이 분야 - 스타트업레시피",
+        "url": "https://tinyurl.com/29quye3x",
+        "source": "스타트업레시피",
         "section": "startup_invest"
       },
       {
-        "title": "독일 딥테크 스타트업 ‘퀀티카’, 시리즈A 투자 유치…고점도 소재 분사 상용화 - 와우테일",
-        "url": "https://tinyurl.com/29s3p5ev",
-        "source": "와우테일",
+        "title": "한국벤처투자, AI 벤처펀드 모니터링 시스템 구축한다 - 연합인포맥스",
+        "url": "https://tinyurl.com/28wm9hcf",
+        "source": "연합인포맥스",
         "section": "startup_invest"
       },
       {
-        "title": "“건물 대신 ‘라벨’ 뗐다”… 장동민·이천희 ‘건물주’ 부럽지 않은 ‘특허주’ - segye.com",
-        "url": "https://tinyurl.com/2cv57s7p",
-        "source": "segye.com",
+        "title": "직방, 기업가치 90% 급락…프롭테크 유니콘 신화 흔들 - 서울경제TV",
+        "url": "https://tinyurl.com/2csoyncf",
+        "source": "서울경제TV",
+        "section": "startup_invest"
+      },
+      {
+        "title": "미시간벤처, 340억 영화펀드 도전…IP확장성·글로벌 공략 '승부수' - numbers.co.kr",
+        "url": "https://tinyurl.com/26grazfn",
+        "source": "numbers.co.kr",
+        "section": "startup_invest"
+      },
+      {
+        "title": "\"디자이너 다 굶어 죽나?\"…구글, 말만 하면 앱 뚝딱 만드는 '스티치' 공개 - 아웃소싱타임스",
+        "url": "https://tinyurl.com/27kyyq9j",
+        "source": "아웃소싱타임스",
         "section": "startup_launch"
       },
       {
-        "title": "머스크 ‘X Money’ 베타 공개…연 6% 이자 내세워 결제 시장 도전 - tokenpost.kr",
-        "url": "https://tinyurl.com/2bz9xkaf",
-        "source": "tokenpost.kr",
+        "title": "벤처기업협회, 상하이서 K-스타트업 글로벌 진출 교두보 마련 - 유니콘팩토리",
+        "url": "https://tinyurl.com/28eff83k",
+        "source": "유니콘팩토리",
         "section": "startup_launch"
       },
       {
-        "title": "“서버 1대당 1억원 이득”…AI 스타트업, 정부 GPU 지원사업에 ‘환호’ - 디지털데일리",
-        "url": "https://tinyurl.com/2azmrvjk",
+        "title": "“투자·수출 한자리” DX KOREA, 스타트업관 본격 가동...참가비 최대 50% 지원 - 더퍼블릭",
+        "url": "https://tinyurl.com/2c8a9jpx",
+        "source": "더퍼블릭",
+        "section": "startup_launch"
+      },
+      {
+        "title": "머스크 ‘X Money’ 베타 공개, 연 6% 이자 앞세워 결제 시장 정조준 - 비온미디어",
+        "url": "https://tinyurl.com/24hqgxd7",
+        "source": "비온미디어",
+        "section": "startup_launch"
+      },
+      {
+        "title": "`1.5만장` GPU 구축사업 공모…2조원 사업 쥘 주인공은? - 디지털데일리",
+        "url": "https://tinyurl.com/2ax3avef",
         "source": "디지털데일리",
         "section": "startup_issue"
       },
       {
-        "title": "자금·공간·네트워크 지원… 순천 ‘청년창업’ 생태계 강화 - 천지일보",
-        "url": "https://tinyurl.com/2ydtcxj9",
-        "source": "천지일보",
+        "title": "광명시, 공직기강 강화 위해 3월 23일부터 특별감찰 실시 - 데일리안",
+        "url": "https://tinyurl.com/257ygaa2",
+        "source": "데일리안",
+        "section": "startup_issue"
+      },
+      {
+        "title": "이병진 수원도시재단 이사장 \"청년 창업 지원 강화\" - 한국경제",
+        "url": "https://tinyurl.com/2c2ms2gy",
+        "source": "한국경제",
+        "section": "startup_issue"
+      },
+      {
+        "title": "-① 청년창업의 실패는 누구의 책임인가 - 이로운넷",
+        "url": "https://tinyurl.com/24ynxynv",
+        "source": "이로운넷",
         "section": "startup_issue"
       }
     ]
