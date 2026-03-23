@@ -29,4 +29,5 @@ jobs:
           GITHUB_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
           GITHUB_OWNER:   ${{ github.repository_owner }}
           GITHUB_REPO:    ${{ github.event.repository.name }}
+          EMAIL_RECIPIENTS:  ${{ secrets.EMAIL_RECIPIENTS }} 
         run: python ceo_morning_briefing.py
