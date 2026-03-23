@@ -84,11 +84,12 @@
       padding-right: 4px;
     }
     .card-title:hover { color: var(--teal-dk); text-decoration: underline; }
-    .card-section {
-      flex-shrink: 0; align-self: flex-start; margin-top: 2px;
-      font-size: 0.66rem; font-weight: 700; color: #fff;
-      background: var(--dark); border-radius: 4px; padding: 2px 7px;
-      white-space: nowrap;
+    .section-group { margin-bottom: 28px; }
+    .section-header {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.82rem; font-weight: 700; color: #fff;
+      background: var(--dark); border-radius: 6px;
+      padding: 7px 14px; margin-bottom: 12px; display: inline-flex;
     }
     .card-bottom {
       display: flex; align-items: center; justify-content: space-between;
@@ -271,28 +272,48 @@
       return;
     }
 
-    container.innerHTML = filtered.map(group => `
-      <div class="date-group">
-        <div class="date-label">📅 ${formatDate(group.date)}</div>
-        <div class="card-grid">
-          ${group.news.map((n, i) => `
-            <div class="card">
-              <div class="card-top">
-                <div class="card-num">${i + 1}</div>
-                <a class="card-title" href="${n.url}" target="_blank" rel="noopener">
-                  ${escHtml(n.title)}
-                </a>
-                <span class="card-section">${SECTION_LABELS[n.section] || ''}</span>
-              </div>
-              <div class="card-bottom">
-                <span class="card-source">${escHtml(n.source || '')}</span>
-                <a class="card-link" href="${n.url}" target="_blank" rel="noopener">기사 보기 →</a>
+    // 섹션 순서 고정
+    const SECTION_ORDER = ['hr','ai','startup_invest','startup_launch','startup_issue'];
+
+    container.innerHTML = filtered.map(group => {
+      // 섹션별로 기사 그룹핑
+      const bySection = {};
+      group.news.forEach(n => {
+        const s = n.section || 'etc';
+        if (!bySection[s]) bySection[s] = [];
+        bySection[s].push(n);
+      });
+      // 섹션 순서대로 렌더링 (데이터에 있는 섹션만)
+      const sectionKeys = SECTION_ORDER.filter(s => bySection[s] && bySection[s].length > 0);
+      // 기타 섹션도 추가
+      Object.keys(bySection).forEach(s => { if (!sectionKeys.includes(s)) sectionKeys.push(s); });
+
+      return `
+        <div class="date-group">
+          <div class="date-label">📅 ${formatDate(group.date)}</div>
+          ${sectionKeys.map(sKey => `
+            <div class="section-group">
+              <div class="section-header">${SECTION_LABELS[sKey] || sKey}</div>
+              <div class="card-grid">
+                ${bySection[sKey].map((n, i) => `
+                  <div class="card">
+                    <div class="card-top">
+                      <div class="card-num">${i + 1}</div>
+                      <a class="card-title" href="${n.url}" target="_blank" rel="noopener">
+                        ${escHtml(n.title)}
+                      </a>
+                    </div>
+                    <div class="card-bottom">
+                      <span class="card-source">${escHtml(n.source || '')}</span>
+                      <a class="card-link" href="${n.url}" target="_blank" rel="noopener">기사 보기 →</a>
+                    </div>
+                  </div>
+                `).join('')}
               </div>
             </div>
           `).join('')}
-        </div>
-      </div>
-    `).join('');
+        </div>`;
+    }).join('');
   }
 
   function formatDate(dateStr) {
