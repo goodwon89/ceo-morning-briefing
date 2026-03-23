@@ -656,7 +656,7 @@ def build_email_html(sections: dict) -> str:
             </a>
           </div>
           <div style="font-size:11px; color:#9ca3af; margin-top:12px;">
-            매일 오전 9시 자동 발송 · 상상인그룹 인재경영실
+            매일 오전 발송 · 상상인그룹 인재경영실
           </div>
         </td>
       </tr>
@@ -898,7 +898,7 @@ def build_github_page_html() -> str:
 <header>
   <img src="logo.png" alt="상상인그룹" />
   <h1>CEO Morning Briefing</h1>
-  <p>HR · AI · 스타트업 주요 뉴스 · 매일 오전 9시 수신</p>
+  <p>HR · AI · 스타트업 주요 뉴스 · 매일 오전 수신</p>
   <div class="subscribe-wrap" style="margin-top:18px;">
     <a class="btn-subscribe primary" href="{mailto_subscribe}">✉️ 구독 신청</a>
   </div>
@@ -948,7 +948,7 @@ def build_github_page_html() -> str:
     <a class="footer-link" href="#"
        onclick="window.scrollTo({{top:0,behavior:'smooth'}});return false;">↑ 맨 위로</a>
   </div>
-  <p class="footer-copy">매일 오전 9시 자동 발송 · 상상인그룹 인재경영실</p>
+  <p class="footer-copy">매일 오전 발송 · 상상인그룹 인재경영실</p>
 </footer>
 
 <script>
