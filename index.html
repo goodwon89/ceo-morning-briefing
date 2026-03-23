@@ -87,12 +87,16 @@
     }
     .card-title:hover { color: var(--teal-dk); text-decoration: underline; }
     .section-group { margin-bottom: 28px; }
+    
+    /* 변경된 카테고리 헤더 스타일 */
     .section-header {
       display: flex; align-items: center; gap: 8px;
-      font-size: 0.82rem; font-weight: 700; color: #fff;
-      background: var(--dark); border-radius: 6px;
-      padding: 7px 14px; margin-bottom: 12px; display: inline-flex;
+      font-size: 0.95rem; font-weight: 800; color: #000000; /* 폰트 색상 블랙 지정 */
+      background: transparent; /* 배경색 투명하게 처리 */
+      padding: 4px 0; /* 배경 상자가 없어졌으므로 좌우 여백 제거 */
+      margin-bottom: 12px; display: inline-flex;
     }
+    
     .card-bottom {
       display: flex; align-items: center; justify-content: space-between;
       padding-top: 6px; border-top: 1px solid #f3f4f6;
