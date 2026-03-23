@@ -29,7 +29,7 @@ GITHUB_OWNER    = os.environ.get("GITHUB_OWNER", "goodwon89")
 GITHUB_REPO     = os.environ.get("GITHUB_REPO", "ceo-morning-briefing")
 GITHUB_BRANCH   = "main"
 
-# 수신자 목록 — GitHub Secrets의 EMAIL_RECIPIENTS (쉼표 구분)으로 관리
+# 수신자 목록 — GitHub Secrets의 EMAIL_RECIPIENTS (쉼표 구분) 로 관리
 EMAIL_RECIPIENTS = [
     e.strip() for e in os.environ.get("EMAIL_RECIPIENTS", "").split(",") if e.strip()
 ]
@@ -190,32 +190,58 @@ def shorten_url(url: str) -> str:
         return url
 
 
-def load_archive() -> dict:
-    """GitHub에서 아카이브 JSON 로드"""
+def load_archive() -> list:
+    """GitHub에서 아카이브 JSON 로드 (list of {date, news} 포맷)
+    구 포맷(dict)은 자동 마이그레이션"""
     url = f"https://raw.githubusercontent.com/{GITHUB_OWNER}/{GITHUB_REPO}/{GITHUB_BRANCH}/{ARCHIVE_FILE}"
     try:
         req = urllib.request.Request(url, headers={"Authorization": f"token {GITHUB_TOKEN}"})
         with urllib.request.urlopen(req, timeout=10) as resp:
-            return json.loads(resp.read().decode())
+            data = json.loads(resp.read().decode())
+            if isinstance(data, dict):  # 구 포맷 → 신 포맷 마이그레이션
+                migrated = [
+                    {"date": k, "news": [{"title": t, "url": "", "source": "", "section": ""}
+                                         for t in v]}
+                    for k, v in sorted(data.items(), reverse=True)
+                ]
+                return migrated
+            return data
     except Exception:
-        return {}
+        return []
 
 
-def save_archive(archive: dict, new_articles: list):
-    """아카이브에 새 기사 추가 후 GitHub에 저장"""
+def save_archive(archive: list, new_articles: list):
+    """아카이브에 새 기사 추가 후 GitHub에 저장 (ssi-hr-news 호환 포맷)"""
     today_str = datetime.now(KST).strftime("%Y-%m-%d")
-    if today_str not in archive:
-        archive[today_str] = []
-    archive[today_str].extend([a["title"] for a in new_articles])
 
-    # 30일 이상 된 기록 삭제
+    new_entries = [
+        {
+            "title": a["title"],
+            "url":   a.get("short_url", a.get("url", "")),
+            "source": a.get("source", ""),
+            "section": a.get("section", ""),
+        }
+        for a in new_articles
+    ]
+
+    # 오늘 날짜 항목 업데이트 or 신규 삽입
+    found = False
+    for entry in archive:
+        if entry["date"] == today_str:
+            entry["news"] = new_entries
+            found = True
+            break
+    if not found:
+        archive.insert(0, {"date": today_str, "news": new_entries})
+
+    # 30일 이상 된 기록 삭제 후 최신순 정렬
     cutoff = (datetime.now(KST) - timedelta(days=30)).strftime("%Y-%m-%d")
-    archive = {k: v for k, v in archive.items() if k >= cutoff}
+    archive = [e for e in archive if e["date"] >= cutoff]
+    archive.sort(key=lambda x: x["date"], reverse=True)
 
     content = json.dumps(archive, ensure_ascii=False, indent=2)
     encoded = base64.b64encode(content.encode()).decode()
 
-    # 현재 파일 SHA 조회
     sha = ""
     api_url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/contents/{ARCHIVE_FILE}"
     try:
@@ -236,9 +262,7 @@ def save_archive(archive: dict, new_articles: list):
     }).encode()
     try:
         req = urllib.request.Request(
-            api_url,
-            data=payload,
-            method="PUT",
+            api_url, data=payload, method="PUT",
             headers={
                 "Authorization": f"token {GITHUB_TOKEN}",
                 "Content-Type": "application/json",
@@ -253,13 +277,17 @@ def save_archive(archive: dict, new_articles: list):
     return archive
 
 
-def load_recent_archive_titles(archive: dict) -> set:
+def load_recent_archive_titles(archive: list) -> set:
     """최근 N일 아카이브에서 이미 발송된 기사 제목 집합 반환"""
     cutoff = (datetime.now(KST) - timedelta(days=ARCHIVE_DAYS)).strftime("%Y-%m-%d")
     titles = set()
-    for date_str, title_list in archive.items():
-        if date_str >= cutoff:
-            titles.update(title_list)
+    for entry in archive:
+        if entry["date"] >= cutoff:
+            for item in entry.get("news", []):
+                if isinstance(item, dict):
+                    titles.add(item.get("title", ""))
+                else:
+                    titles.add(str(item))
     print(f"[archive] 최근 {ARCHIVE_DAYS}일 기사 {len(titles)}건 중복 방지 로드")
     return titles
 
@@ -453,8 +481,12 @@ def collect_all_news() -> dict:
     total = sum(len(v) for v in sections.values())
     print(f"\n[수집 완료] 총 {total}건 / 목표 {TOTAL_TARGET}건")
 
-    # 아카이브 저장
-    all_articles = [a for s in sections.values() for a in s]
+    # 아카이브 저장 (각 기사에 section 키 추가)
+    all_articles = []
+    for section_key, articles in sections.items():
+        for a in articles:
+            a["section"] = section_key
+            all_articles.append(a)
     save_archive(archive, all_articles)
 
     return sections
@@ -464,225 +496,160 @@ def collect_all_news() -> dict:
 #  ⑥ HTML 이메일 템플릿
 # ─────────────────────────────────────────────
 SECTION_META = {
-    "hr":             {"icon": "👥", "title": "HR"},
-    "ai":             {"icon": "🤖", "title": "AI / 기술"},
-    "startup_invest": {"icon": "💰", "title": "투자"},
-    "startup_launch": {"icon": "🚀", "title": "출시 / 성과"},
-    "startup_issue":  {"icon": "📋", "title": "지원 / 이슈"},
+    "hr":             {"icon": "👥", "title": "HR",          "desc": "인사기획 · 평가 · 조직문화 · 노동법 핵심 이슈"},
+    "ai":             {"icon": "🤖", "title": "AI / 기술",    "desc": "AI · 디지털 전환이 기업과 HR에 미치는 영향"},
+    "startup_invest": {"icon": "💰", "title": "투자",         "desc": "국내 스타트업 투자 · VC · IPO 동향"},
+    "startup_launch": {"icon": "🚀", "title": "출시 / 성과",  "desc": "스타트업 신규 서비스 · 해외 진출 · 수상"},
+    "startup_issue":  {"icon": "📋", "title": "지원 / 이슈",  "desc": "정부 지원 · 규제 · 창업 생태계 이슈"},
 }
 SECTION_ORDER = ["hr", "ai", "startup_invest", "startup_launch", "startup_issue"]
 
 
-# 상상인그룹 로고 SVG (inline, email-safe data URI)
-LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" width="110" height="24">
-  <circle cx="14" cy="24" r="11" fill="#4fc3a1"/>
-  <circle cx="36" cy="24" r="11" fill="#4fc3a1" opacity="0.65"/>
-  <circle cx="58" cy="24" r="11" fill="#4fc3a1" opacity="0.35"/>
-  <text x="76" y="31" font-family="Apple SD Gothic Neo,Malgun Gothic,Arial,sans-serif"
-        font-size="18" font-weight="800" fill="#ffffff" letter-spacing="-0.5">상상인그룹</text>
-</svg>"""
-
-LOGO_SVG_DARK = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" width="110" height="24">
-  <circle cx="14" cy="24" r="11" fill="#4fc3a1"/>
-  <circle cx="36" cy="24" r="11" fill="#4fc3a1" opacity="0.65"/>
-  <circle cx="58" cy="24" r="11" fill="#4fc3a1" opacity="0.35"/>
-  <text x="76" y="31" font-family="Apple SD Gothic Neo,Malgun Gothic,Arial,sans-serif"
-        font-size="18" font-weight="800" fill="#1a1a2e" letter-spacing="-0.5">상상인그룹</text>
-</svg>"""
-
-
-def _article_rows(articles: list[dict]) -> str:
-    rows = []
-    for art in articles:
-        source = art.get("source", "")
-        pub_ts = art.get("pub_time", 0)
-        if pub_ts:
-            pub_date = datetime.fromtimestamp(pub_ts, tz=KST).strftime("%m.%d")
-        else:
-            pub_date = ""
-        date_src = f"{source} · {pub_date}" if pub_date else source
-
-        rows.append(f"""
-        <tr>
-          <td style="padding:12px 0; border-bottom:1px solid #f2f2f2; vertical-align:top;">
-            <a href="{art['short_url']}" target="_blank"
-               style="font-size:14px; color:#1a1a1a; text-decoration:none; line-height:1.6;
-                      font-weight:500; display:block; letter-spacing:-0.1px;">
-              {art['title']}
-            </a>
-            <span style="font-size:11px; color:#b0b0b0; margin-top:4px; display:block;
-                         letter-spacing:0.1px;">{date_src}</span>
-          </td>
-        </tr>""")
-    return "\n".join(rows)
-
-
-def _section_block(section_key: str, articles: list[dict]) -> str:
-    if not articles:
-        return ""
-    meta = SECTION_META[section_key]
-    rows_html = _article_rows(articles)
-    return f"""
-    <!-- {meta['title']} 섹션 -->
-    <tr>
-      <td style="padding: 24px 0 8px 0;">
-        <table cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td style="background:#eefaf6; border-radius:8px; padding:4px 12px 4px 10px;">
-              <span style="font-size:12px; font-weight:700; color:#1a7a5e; letter-spacing:0.2px;">
-                {meta['icon']}&nbsp; {meta['title']}
-              </span>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <table width="100%" cellpadding="0" cellspacing="0" border="0">
-          {rows_html}
-        </table>
-      </td>
-    </tr>"""
+LOGO_URL = f"https://{GITHUB_OWNER}.github.io/{GITHUB_REPO}/logo.png"
 
 
 def build_email_html(sections: dict) -> str:
-    today_str = datetime.now(KST).strftime("%Y.%m.%d (%a)")
-    for en, ko in [("Mon","월"),("Tue","화"),("Wed","수"),("Thu","목"),("Fri","금"),("Sat","토"),("Sun","일")]:
-        today_str = today_str.replace(en, ko)
-
-    all_sections_html = "".join(
-        _section_block(k, sections.get(k, [])) for k in SECTION_ORDER
-    )
+    """ssi-hr-news 스타일 이메일 HTML 생성"""
+    today = datetime.now(KST).strftime("%Y년 %m월 %d일")
+    days = ["월","화","수","목","금","토","일"]
+    weekday = days[datetime.now(KST).weekday()]
 
     subscribe_subject   = urllib.parse.quote("CEO Morning Briefing 구독 신청")
-    subscribe_body      = urllib.parse.quote("안녕하세요,\n\nCEO Morning Briefing 구독을 신청합니다.\n\n이메일 주소: ")
+    subscribe_body      = urllib.parse.quote("안녕하세요,\n\nCEO Morning Briefing 구독을 신청합니다.\n\n수신 이메일: (여기에 이메일 주소를 입력해 주세요)\n\n감사합니다.")
     unsubscribe_subject = urllib.parse.quote("CEO Morning Briefing 구독 취소")
-    unsubscribe_body    = urllib.parse.quote("안녕하세요,\n\nCEO Morning Briefing 구독을 취소 요청합니다.\n\n이메일 주소: ")
+    unsubscribe_body    = urllib.parse.quote("안녕하세요,\n\nCEO Morning Briefing 구독을 취소 요청합니다.\n\n수신 이메일: (취소할 이메일 주소를 입력해 주세요)\n\n감사합니다.")
     mailto_subscribe   = f"mailto:{GMAIL_USER}?subject={subscribe_subject}&body={subscribe_body}"
     mailto_unsubscribe = f"mailto:{GMAIL_USER}?subject={unsubscribe_subject}&body={unsubscribe_body}"
     pages_url = f"https://{GITHUB_OWNER}.github.io/{GITHUB_REPO}/"
 
-    logo_b64 = base64.b64encode(LOGO_SVG.encode()).decode()
-    logo_data_uri = f"data:image/svg+xml;base64,{logo_b64}"
+    # 섹션별 뉴스 행 생성 (번호 뱃지 + 카테고리 구분선)
+    news_rows = ""
+    item_num = 1
+    prev_section = None
+    for key in SECTION_ORDER:
+        articles = sections.get(key, [])
+        if not articles:
+            continue
+        meta = SECTION_META[key]
+        # 카테고리 구분 헤더
+        news_rows += f"""
+        <tr>
+          <td style="padding:14px 20px 10px; background:#f4f6f9; border-bottom:2px solid #1a1a2e;">
+            <div style="font-size:13px; font-weight:700; color:#1a1a2e; letter-spacing:0.3px;">
+              {meta['icon']}&nbsp;{meta['title']}
+            </div>
+            <div style="font-size:11px; color:#6b7280; margin-top:3px;">{meta.get('desc','')}</div>
+          </td>
+        </tr>"""
+        for art in articles:
+            source = art.get("source", "")
+            url    = art.get("short_url", art.get("url", "#"))
+            title  = art["title"].replace("<","&lt;").replace(">","&gt;")
+            news_rows += f"""
+        <tr>
+          <td style="padding:16px 20px; border-bottom:1px solid #f0f0f0;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td width="32" valign="top" style="padding-top:2px;">
+                  <div style="width:24px; height:24px; background:#1a1a2e; border-radius:50%;
+                              color:#fff; font-size:12px; font-weight:700;
+                              text-align:center; line-height:24px;">{item_num}</div>
+                </td>
+                <td style="padding-left:12px;">
+                  <a href="{url}" target="_blank"
+                     style="font-size:15px; font-weight:600; color:#1a1a2e;
+                            text-decoration:none; line-height:1.5;">{title}</a>
+                  <div style="margin-top:6px;">
+                    <span style="font-size:12px; color:#9ca3af;">{source}</span>
+                    &nbsp;&nbsp;
+                    <a href="{url}" target="_blank"
+                       style="font-size:12px; color:#fff; background:#1a1a2e;
+                              text-decoration:none; padding:3px 10px; border-radius:4px;">
+                      기사 보기 →
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>"""
+            item_num += 1
 
     return f"""<!DOCTYPE html>
 <html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CEO Morning Briefing</title>
-</head>
-<body style="margin:0; padding:0; background:#f0f0f5; font-family:'Apple SD Gothic Neo',Malgun Gothic,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f0f0f5">
-  <tr>
-    <td align="center" style="padding: 28px 16px 40px;">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0; padding:0; background:#f0f2f5;
+             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f2f5; padding:32px 16px;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%;">
 
-      <!-- 카드 -->
-      <table width="600" cellpadding="0" cellspacing="0" border="0"
-             style="max-width:600px; background:#ffffff; border-radius:18px;
-                    box-shadow:0 4px 24px rgba(0,0,0,0.09); overflow:hidden;">
+      <!-- 헤더 -->
+      <tr>
+        <td style="background:#e7f0e9; border-radius:12px 12px 0 0;
+                   padding:28px 24px 22px; text-align:center;">
+          <img src="{LOGO_URL}" alt="상상인그룹" width="90" height="85"
+               style="display:block; margin:0 auto 14px;" />
+          <div style="font-size:20px; font-weight:800; color:#1a1a2e; line-height:1.3;">
+            CEO Morning Briefing
+          </div>
+          <div style="font-size:14px; font-weight:600; color:#1a1a2e; margin-top:2px;">
+            HR · AI · 스타트업 주요 뉴스
+          </div>
+          <div style="font-size:12px; color:#5a7a60; margin-top:8px;">
+            {today} ({weekday})
+          </div>
+        </td>
+      </tr>
 
-        <!-- 헤더 -->
-        <tr>
-          <td style="background:#1a1a2e; padding:28px 36px 22px;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="vertical-align:middle;">
-                  <!-- 로고 -->
-                  <img src="{logo_data_uri}" width="110" height="24" alt="상상인그룹"
-                       style="display:block; border:0; margin-bottom:10px;">
-                  <div style="font-size:11px; font-weight:600; color:#4fc3a1;
-                               letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px;">
-                    CEO MORNING BRIEFING
-                  </div>
-                  <div style="font-size:12px; color:#888; margin-top:2px;">
-                    {today_str}
-                  </div>
-                </td>
-                <td align="right" style="vertical-align:top;">
-                  <a href="{mailto_subscribe}"
-                     style="display:inline-block; padding:7px 16px; border:1.5px solid #4fc3a1;
-                            border-radius:20px; color:#4fc3a1; font-size:11px;
-                            text-decoration:none; font-weight:600; white-space:nowrap;">
-                    구독 신청
-                  </a>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
+      <!-- 뉴스 목록 -->
+      <tr>
+        <td style="background:#ffffff;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            {news_rows}
+          </table>
+        </td>
+      </tr>
 
-        <!-- 구분선 accent -->
-        <tr>
-          <td style="height:3px; background:linear-gradient(90deg,#4fc3a1,#1a1a2e);"></td>
-        </tr>
+      <!-- 푸터 -->
+      <tr>
+        <td style="background:#f8f9fa; border-radius:0 0 12px 12px;
+                   padding:24px 24px 20px; text-align:center;
+                   border-top:1px solid #e5e7eb;">
+          <a href="{pages_url}" target="_blank"
+             style="display:inline-block; font-size:13px; font-weight:600; color:#1a1a2e;
+                    text-decoration:none; border:1px solid #1a1a2e; border-radius:6px;
+                    padding:8px 20px;">
+            📁 전체 뉴스 아카이브 보기
+          </a>
+          <div style="margin-top:14px;">
+            <a href="{mailto_subscribe}"
+               style="display:inline-block; font-size:12px; font-weight:600; color:#fff;
+                      background:#1a1a2e; text-decoration:none; border-radius:6px;
+                      padding:7px 18px; margin:0 4px;">
+              ✉️ 구독 신청
+            </a>
+            <a href="{mailto_unsubscribe}"
+               style="display:inline-block; font-size:12px; font-weight:500; color:#6b7280;
+                      background:#fff; text-decoration:none; border:1px solid #d1d5db;
+                      border-radius:6px; padding:7px 18px; margin:0 4px;">
+              구독 취소
+            </a>
+          </div>
+          <div style="margin-top:12px;">
+            <a href="https://ssihr.oopy.io" target="_blank"
+               style="font-size:12px; color:#1a1a2e; text-decoration:none; margin:0 8px;">
+              인재경영실 소개
+            </a>
+          </div>
+          <div style="font-size:11px; color:#9ca3af; margin-top:12px;">
+            매일 오전 9시 자동 발송 · 상상인그룹 인재경영실
+          </div>
+        </td>
+      </tr>
 
-        <!-- 본문 -->
-        <tr>
-          <td style="padding: 8px 36px 20px;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              {all_sections_html}
-            </table>
-          </td>
-        </tr>
-
-        <!-- 구분선 -->
-        <tr>
-          <td style="padding:0 36px;">
-            <hr style="border:none; border-top:1px solid #f0f0f0; margin:0;">
-          </td>
-        </tr>
-
-        <!-- 푸터 -->
-        <tr>
-          <td style="padding:22px 36px 28px; background:#fafafa; border-radius:0 0 18px 18px;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td align="center" style="padding-bottom:14px;">
-                  <a href="{mailto_subscribe}"
-                     style="display:inline-block; padding:10px 22px;
-                            background:#4fc3a1; border-radius:22px;
-                            color:#ffffff; font-size:13px; font-weight:700;
-                            text-decoration:none; margin-right:8px; letter-spacing:-0.2px;">
-                    구독 신청
-                  </a>
-                  <a href="{mailto_unsubscribe}"
-                     style="display:inline-block; padding:10px 22px;
-                            border:1.5px solid #ddd; border-radius:22px;
-                            color:#888; font-size:13px; font-weight:600;
-                            text-decoration:none; letter-spacing:-0.2px;">
-                    구독 취소
-                  </a>
-                </td>
-              </tr>
-              <tr>
-                <td align="center" style="padding-bottom:8px;">
-                  <a href="https://ssihr.oopy.io" target="_blank"
-                     style="font-size:12px; color:#4fc3a1; text-decoration:none; margin:0 10px;">
-                    인재경영실 소개
-                  </a>
-                  <span style="color:#ddd;">|</span>
-                  <a href="{pages_url}" target="_blank"
-                     style="font-size:12px; color:#999; text-decoration:none; margin:0 10px;">
-                    웹사이트
-                  </a>
-                </td>
-              </tr>
-              <tr>
-                <td align="center">
-                  <span style="font-size:11px; color:#c0c0c0; letter-spacing:0.2px;">
-                    매일 오전 9시 자동 발송 · 상상인그룹 인재경영실
-                  </span>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-      </table>
-    </td>
-  </tr>
+    </table>
+  </td></tr>
 </table>
 </body>
 </html>"""
@@ -754,199 +721,350 @@ def _push_file_to_github(filepath: str, content_bytes: bytes, commit_msg: str):
         print(f"[GitHub] {filepath} 업로드 완료 ({resp.status})")
 
 
-def build_github_page_html(sections: dict) -> str:
-    """GitHub Pages 전용 HTML (index.html 내 최신 브리핑 삽입) — Apple-style"""
-    today_str = datetime.now(KST).strftime("%Y.%m.%d (%a)")
-    for en, ko in [("Mon","월"),("Tue","화"),("Wed","수"),("Thu","목"),("Fri","금"),("Sat","토"),("Sun","일")]:
-        today_str = today_str.replace(en, ko)
-
+def build_github_page_html() -> str:
+    """ssi-hr-news 스타일 GitHub Pages index.html 생성
+    (news_archive.json을 JS fetch로 동적 로딩 — 검색/필터/카드 그리드)"""
     subscribe_subject   = urllib.parse.quote("CEO Morning Briefing 구독 신청")
-    subscribe_body      = urllib.parse.quote("안녕하세요,\n\nCEO Morning Briefing 구독을 신청합니다.\n\n이메일 주소: ")
+    subscribe_body      = urllib.parse.quote("안녕하세요,\n\nCEO Morning Briefing 구독을 신청합니다.\n\n수신 이메일: (여기에 이메일 주소를 입력해 주세요)\n\n감사합니다.")
     unsubscribe_subject = urllib.parse.quote("CEO Morning Briefing 구독 취소")
-    unsubscribe_body    = urllib.parse.quote("안녕하세요,\n\nCEO Morning Briefing 구독을 취소 요청합니다.\n\n이메일 주소: ")
+    unsubscribe_body    = urllib.parse.quote("안녕하세요,\n\nCEO Morning Briefing 구독을 취소 요청합니다.\n\n수신 이메일: (취소할 이메일 주소를 입력해 주세요)\n\n감사합니다.")
     mailto_subscribe   = f"mailto:{GMAIL_USER}?subject={subscribe_subject}&body={subscribe_body}"
     mailto_unsubscribe = f"mailto:{GMAIL_USER}?subject={unsubscribe_subject}&body={unsubscribe_body}"
-
-    sections_html_parts = []
-    for key in SECTION_ORDER:
-        arts = sections.get(key, [])
-        if not arts:
-            continue
-        meta = SECTION_META[key]
-        items_html = ""
-        for art in arts:
-            source = art.get("source", "")
-            pub_ts = art.get("pub_time", 0)
-            pub_date = datetime.fromtimestamp(pub_ts, tz=KST).strftime("%m.%d") if pub_ts else ""
-            date_src = f"{source} · {pub_date}" if pub_date else source
-            items_html += f"""
-              <div class="article-item">
-                <a href="{art['short_url']}" target="_blank" rel="noopener">{art['title']}</a>
-                <span class="article-meta">{date_src}</span>
-              </div>"""
-        sections_html_parts.append(f"""
-          <div class="section-block">
-            <div class="section-tag">{meta['icon']}&nbsp; {meta['title']}</div>
-            {items_html}
-          </div>""")
-
-    sections_html = "\n".join(sections_html_parts)
 
     return f"""<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="상상인그룹 CEO Morning Briefing — HR·AI·스타트업 뉴스">
-<title>CEO Morning Briefing | 상상인그룹</title>
-<style>
-  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{ background: #f0f0f5; font-family: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-          color: #1a1a1a; -webkit-font-smoothing: antialiased; }}
-  .wrap {{ max-width: 680px; margin: 0 auto; padding: 24px 16px 64px; }}
-
-  /* 헤더 */
-  .header {{
-    background: #1a1a2e; border-radius: 18px; padding: 28px 32px 24px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 20px rgba(26,26,46,0.18);
-  }}
-  .header-accent {{
-    height: 3px; background: linear-gradient(90deg, #4fc3a1 0%, #1a7a5e 100%);
-    border-radius: 0 0 4px 4px; margin: 0 0 20px 0;
-  }}
-  .logo-svg {{ display: block; margin-bottom: 12px; }}
-  .header-label {{
-    font-size: 10px; font-weight: 700; color: #4fc3a1;
-    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px;
-  }}
-  .header-date {{ font-size: 12px; color: #888; }}
-  .header-top {{ display: flex; justify-content: space-between; align-items: flex-start; }}
-  .btn-subscribe {{
-    display: inline-block; padding: 8px 18px;
-    border: 1.5px solid #4fc3a1; border-radius: 22px;
-    color: #4fc3a1; font-size: 12px; font-weight: 600;
-    text-decoration: none; white-space: nowrap;
-    transition: all 0.2s;
-  }}
-  .btn-subscribe:hover {{ background: #4fc3a1; color: #fff; }}
-
-  /* 카드 */
-  .card {{
-    background: #fff; border-radius: 16px; padding: 24px 28px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 16px;
-  }}
-
-  /* 섹션 */
-  .section-block {{ margin-bottom: 28px; }}
-  .section-block:last-child {{ margin-bottom: 0; }}
-  .section-tag {{
-    display: inline-block; background: #eefaf6; border-radius: 8px;
-    padding: 4px 12px; font-size: 12px; font-weight: 700; color: #1a7a5e;
-    margin-bottom: 12px; letter-spacing: 0.2px;
-  }}
-
-  /* 기사 */
-  .article-item {{ padding: 11px 0; border-bottom: 1px solid #f2f2f2; }}
-  .article-item:last-child {{ border-bottom: none; }}
-  .article-item a {{
-    display: block; font-size: 14px; color: #1a1a1a; text-decoration: none;
-    font-weight: 500; line-height: 1.6; letter-spacing: -0.1px;
-  }}
-  .article-item a:hover {{ color: #4fc3a1; }}
-  .article-meta {{ display: block; font-size: 11px; color: #b0b0b0; margin-top: 4px; letter-spacing: 0.1px; }}
-
-  /* 푸터 */
-  .footer {{ text-align: center; padding: 20px 0 8px; }}
-  .footer-btns {{ margin-bottom: 14px; }}
-  .btn-fill {{
-    display: inline-block; padding: 10px 24px; background: #4fc3a1;
-    border-radius: 22px; color: #fff; font-size: 13px; font-weight: 700;
-    text-decoration: none; margin-right: 8px; letter-spacing: -0.2px;
-    box-shadow: 0 2px 8px rgba(79,195,161,0.3);
-  }}
-  .btn-fill:hover {{ background: #3aaf8d; }}
-  .btn-outline {{
-    display: inline-block; padding: 10px 24px; border: 1.5px solid #ddd;
-    border-radius: 22px; color: #888; font-size: 13px; font-weight: 600;
-    text-decoration: none; letter-spacing: -0.2px;
-  }}
-  .footer-links {{ font-size: 12px; margin-bottom: 10px; }}
-  .footer-links a {{ color: #4fc3a1; text-decoration: none; margin: 0 10px; }}
-  .footer-links a:hover {{ text-decoration: underline; }}
-  .footer-sep {{ color: #ddd; }}
-  .footer-note {{ font-size: 11px; color: #c0c0c0; letter-spacing: 0.2px; }}
-
-  @media (max-width: 480px) {{
-    .header {{ padding: 22px 20px 18px; border-radius: 14px; }}
-    .card {{ padding: 20px 18px; border-radius: 14px; }}
-  }}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CEO Morning Briefing | 상상인그룹</title>
+  <style>
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    :root {{ --teal: #1CC9BE; --teal-dk: #17b0a6; --dark: #1a1a2e; --gray-lt: #f0f2f5; }}
+    body {{
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: var(--gray-lt); color: var(--dark); min-height: 100vh;
+    }}
+    header {{
+      background: #e7f0e9; color: var(--dark);
+      padding: 28px 24px 24px; text-align: center;
+    }}
+    header img {{ width: 72px; height: auto; display: block; margin: 0 auto 14px; }}
+    header h1 {{ font-size: 1.55rem; font-weight: 700; letter-spacing: -0.3px; color: var(--dark); }}
+    header p {{ margin-top: 6px; font-size: 0.83rem; color: #5a7a60; }}
+    .stats {{
+      display: flex; justify-content: center; gap: 0;
+      background: #fff; border-bottom: 1px solid #e5e7eb;
+    }}
+    .stat {{ text-align: center; padding: 16px 40px; border-right: 1px solid #e5e7eb; }}
+    .stat:last-child {{ border-right: none; }}
+    .stat-num {{ font-size: 1.5rem; font-weight: 800; color: var(--teal); }}
+    .stat-label {{ font-size: 0.72rem; color: #6b7280; margin-top: 3px; letter-spacing: 0.3px; }}
+    .toolbar {{
+      max-width: 1100px; margin: 28px auto 0; padding: 0 20px;
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+    }}
+    #searchBox {{
+      flex: 1; min-width: 200px; padding: 10px 16px;
+      border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.9rem;
+      outline: none; background: #fff; transition: border-color .2s, box-shadow .2s;
+    }}
+    #searchBox:focus {{ border-color: var(--teal); box-shadow: 0 0 0 3px rgba(28,201,190,.12); }}
+    #monthFilter {{
+      padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px;
+      font-size: 0.88rem; background: #fff; color: var(--dark);
+      outline: none; cursor: pointer; transition: border-color .2s;
+    }}
+    #monthFilter:focus {{ border-color: var(--teal); }}
+    .result-count {{ font-size: 0.82rem; color: #6b7280; white-space: nowrap; }}
+    main {{ max-width: 1100px; margin: 20px auto 80px; padding: 0 20px; }}
+    .date-group {{ margin-bottom: 36px; }}
+    .date-label {{
+      font-size: 0.8rem; font-weight: 700; color: var(--dark);
+      letter-spacing: 0.4px; margin-bottom: 14px; padding: 6px 12px;
+      background: #fff; border-left: 3px solid var(--teal);
+      border-radius: 0 6px 6px 0; display: inline-block;
+    }}
+    .card-grid {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }}
+    @media (max-width: 640px) {{
+      .card-grid {{ grid-template-columns: 1fr; }}
+      .stat {{ padding: 14px 20px; }}
+      .toolbar {{ flex-direction: column; }}
+      #searchBox {{ min-width: unset; }}
+    }}
+    .card {{
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+      padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;
+      transition: box-shadow .18s, transform .18s, border-color .18s;
+    }}
+    .card:hover {{
+      border-color: var(--teal);
+      box-shadow: 0 6px 20px rgba(28,201,190,.15);
+      transform: translateY(-2px);
+    }}
+    .card-top {{ display: flex; align-items: flex-start; gap: 12px; }}
+    .card-num {{
+      flex-shrink: 0; width: 26px; height: 26px; background: var(--teal);
+      color: var(--dark); border-radius: 50%; font-size: 0.72rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; margin-top: 1px;
+    }}
+    .card-title {{
+      font-size: 0.93rem; font-weight: 600; line-height: 1.5;
+      color: var(--dark); text-decoration: none; word-break: keep-all; flex: 1;
+    }}
+    .card-title:hover {{ color: var(--teal-dk); text-decoration: underline; }}
+    .card-bottom {{
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 6px; border-top: 1px solid #f3f4f6;
+    }}
+    .card-source {{ font-size: 0.75rem; color: #9ca3af; font-weight: 500; }}
+    .card-section {{
+      font-size: 0.68rem; font-weight: 700; color: #fff;
+      background: var(--dark); border-radius: 4px; padding: 2px 7px;
+    }}
+    .card-link {{
+      font-size: 0.76rem; font-weight: 700; color: var(--dark);
+      background: var(--teal); text-decoration: none;
+      border-radius: 5px; padding: 4px 11px; transition: background .15s; white-space: nowrap;
+    }}
+    .card-link:hover {{ background: var(--teal-dk); }}
+    .empty, .loading {{
+      text-align: center; padding: 80px 0; color: #9ca3af;
+      font-size: 0.9rem; grid-column: 1 / -1;
+    }}
+    .empty-wrap {{ display: grid; }}
+    #backToTop {{
+      position: fixed; bottom: 32px; right: 28px;
+      width: 44px; height: 44px; background: var(--teal); color: var(--dark);
+      border: none; border-radius: 50%; font-size: 1.1rem; font-weight: 700;
+      cursor: pointer; box-shadow: 0 4px 14px rgba(28,201,190,.4);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 100;
+    }}
+    #backToTop.visible {{ opacity: 1; pointer-events: auto; }}
+    #backToTop:hover {{ transform: scale(1.1); background: var(--teal-dk); }}
+    .subscribe-wrap {{ display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }}
+    .btn-subscribe {{
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.82rem; font-weight: 700; text-decoration: none;
+      border-radius: 6px; padding: 7px 18px;
+      transition: background .15s, color .15s, border-color .15s;
+      cursor: pointer; white-space: nowrap;
+    }}
+    .btn-subscribe.primary {{
+      background: var(--teal); color: var(--dark); border: 1px solid var(--teal);
+    }}
+    .btn-subscribe.primary:hover {{ background: var(--teal-dk); border-color: var(--teal-dk); }}
+    .btn-subscribe.ghost {{
+      background: transparent; color: #6b7280; border: 1px solid #d1d5db;
+    }}
+    .btn-subscribe.ghost:hover {{ border-color: #9ca3af; color: #374151; }}
+    footer {{
+      background: #fff; border-top: 1px solid #e5e7eb;
+      padding: 28px 24px; text-align: center;
+    }}
+    .footer-links {{
+      display: flex; justify-content: center; align-items: center;
+      gap: 16px; flex-wrap: wrap; margin-top: 16px;
+    }}
+    .footer-link {{ font-size: 0.8rem; color: #9ca3af; text-decoration: none; }}
+    .footer-link:hover {{ color: var(--teal); text-decoration: underline; }}
+    .footer-divider {{ color: #d1d5db; font-size: 0.75rem; }}
+    .footer-copy {{ font-size: 0.75rem; color: #9ca3af; margin-top: 14px; }}
+  </style>
 </head>
 <body>
-<div class="wrap">
 
-  <!-- 헤더 -->
-  <div class="header">
-    <div class="header-top">
-      <div>
-        <svg class="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 40" width="110" height="20">
-          <circle cx="12" cy="20" r="9" fill="#4fc3a1"/>
-          <circle cx="30" cy="20" r="9" fill="#4fc3a1" opacity="0.65"/>
-          <circle cx="48" cy="20" r="9" fill="#4fc3a1" opacity="0.35"/>
-          <text x="64" y="26" font-family="-apple-system,Apple SD Gothic Neo,Malgun Gothic,Arial,sans-serif"
-                font-size="15" font-weight="800" fill="#ffffff" letter-spacing="-0.3">상상인그룹</text>
-        </svg>
-        <div class="header-label">CEO MORNING BRIEFING</div>
-        <div class="header-date">{today_str}</div>
-      </div>
-      <a href="{mailto_subscribe}" class="btn-subscribe">구독 신청</a>
-    </div>
+<header>
+  <img src="logo.png" alt="상상인그룹" />
+  <h1>CEO Morning Briefing</h1>
+  <p>HR · AI · 스타트업 주요 뉴스 · 매일 오전 9시 수신</p>
+  <div class="subscribe-wrap" style="margin-top:18px;">
+    <a class="btn-subscribe primary" href="{mailto_subscribe}">✉️ 구독 신청</a>
   </div>
+</header>
 
-  <!-- 뉴스 카드 -->
-  <div class="card">
-    {sections_html}
+<div class="stats">
+  <div class="stat">
+    <div class="stat-num" id="statDays">-</div>
+    <div class="stat-label">수집 일수</div>
   </div>
-
-  <!-- 푸터 -->
-  <div class="footer">
-    <div class="footer-btns">
-      <a href="{mailto_subscribe}" class="btn-fill">구독 신청</a>
-      <a href="{mailto_unsubscribe}" class="btn-outline">구독 취소</a>
-    </div>
-    <div class="footer-links">
-      <a href="https://ssihr.oopy.io" target="_blank">인재경영실 소개</a>
-      <span class="footer-sep">|</span>
-      <a href="#top">맨 위로</a>
-    </div>
-    <div class="footer-note">매일 오전 9시 자동 발송 · 상상인그룹 인재경영실</div>
+  <div class="stat">
+    <div class="stat-num" id="statTotal">-</div>
+    <div class="stat-label">누적 기사</div>
   </div>
-
+  <div class="stat">
+    <div class="stat-num" id="statLatest">-</div>
+    <div class="stat-label">최근 수신</div>
+  </div>
 </div>
+
+<div class="toolbar">
+  <input id="searchBox" type="text" placeholder="🔍 기사 제목 검색..." oninput="renderNews()" />
+  <select id="monthFilter" onchange="renderNews()">
+    <option value="">전체 기간</option>
+  </select>
+  <span class="result-count" id="resultCount"></span>
+</div>
+
+<main>
+  <div id="content">
+    <div class="loading">뉴스 데이터를 불러오는 중...</div>
+  </div>
+</main>
+
+<button id="backToTop" onclick="window.scrollTo({{top:0,behavior:'smooth'}})" title="맨 위로">↑</button>
+
+<footer>
+  <div class="subscribe-wrap">
+    <a class="btn-subscribe primary" href="{mailto_subscribe}">✉️ 구독 신청</a>
+    <a class="btn-subscribe ghost"   href="{mailto_unsubscribe}">구독 취소</a>
+  </div>
+  <div class="footer-links">
+    <a class="footer-link" href="https://ssihr.oopy.io" target="_blank" rel="noopener">
+      👋 인재경영실 소개
+    </a>
+    <span class="footer-divider">|</span>
+    <a class="footer-link" href="#"
+       onclick="window.scrollTo({{top:0,behavior:'smooth'}});return false;">↑ 맨 위로</a>
+  </div>
+  <p class="footer-copy">매일 오전 9시 자동 발송 · 상상인그룹 인재경영실</p>
+</footer>
+
+<script>
+  // 섹션 레이블 매핑
+  const SECTION_LABELS = {{
+    hr: "👥 HR",
+    ai: "🤖 AI / 기술",
+    startup_invest: "💰 투자",
+    startup_launch: "🚀 출시 / 성과",
+    startup_issue:  "📋 지원 / 이슈",
+  }};
+
+  let allData = [];
+
+  async function loadData() {{
+    try {{
+      const res = await fetch('news_archive.json?_=' + Date.now());
+      allData = await res.json();
+      allData.sort((a, b) => b.date.localeCompare(a.date));
+      updateStats();
+      buildMonthFilter();
+      renderNews();
+    }} catch (e) {{
+      document.getElementById('content').innerHTML =
+        '<div class="empty">데이터를 불러오지 못했습니다.<br>잠시 후 새로고침 해주세요.</div>';
+    }}
+  }}
+
+  function updateStats() {{
+    const days   = allData.length;
+    const total  = allData.reduce((s, d) => s + d.news.length, 0);
+    const latest = days > 0 ? allData[0].date.replace(/-/g, '.') : '-';
+    document.getElementById('statDays').textContent   = days;
+    document.getElementById('statTotal').textContent  = total;
+    document.getElementById('statLatest').textContent = latest;
+  }}
+
+  function buildMonthFilter() {{
+    const months = [...new Set(allData.map(d => d.date.slice(0, 7)))];
+    const sel = document.getElementById('monthFilter');
+    months.forEach(m => {{
+      const [y, mo] = m.split('-');
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = `${{y}}년 ${{parseInt(mo)}}월`;
+      sel.appendChild(opt);
+    }});
+  }}
+
+  function renderNews() {{
+    const query  = document.getElementById('searchBox').value.trim().toLowerCase();
+    const month  = document.getElementById('monthFilter').value;
+    const container = document.getElementById('content');
+
+    const filtered = allData.map(group => {{
+      if (month && !group.date.startsWith(month)) return null;
+      const news = group.news.filter(n => !query || n.title.toLowerCase().includes(query));
+      return news.length > 0 ? {{ ...group, news }} : null;
+    }}).filter(Boolean);
+
+    const totalItems = filtered.reduce((s, g) => s + g.news.length, 0);
+    document.getElementById('resultCount').textContent =
+      filtered.length > 0 ? `${{filtered.length}}일 · ${{totalItems}}건` : '';
+
+    if (filtered.length === 0) {{
+      container.innerHTML = '<div class="empty-wrap"><div class="empty">검색 결과가 없습니다.</div></div>';
+      return;
+    }}
+
+    container.innerHTML = filtered.map(group => `
+      <div class="date-group">
+        <div class="date-label">📅 ${{formatDate(group.date)}}</div>
+        <div class="card-grid">
+          ${{group.news.map((n, i) => `
+            <div class="card">
+              <div class="card-top">
+                <div class="card-num">${{i + 1}}</div>
+                <a class="card-title" href="${{n.url}}" target="_blank" rel="noopener">
+                  ${{escHtml(n.title)}}
+                </a>
+              </div>
+              <div class="card-bottom">
+                <span class="card-source">${{escHtml(n.source || '')}}</span>
+                <span class="card-section">${{SECTION_LABELS[n.section] || ''}}</span>
+                <a class="card-link" href="${{n.url}}" target="_blank" rel="noopener">기사 보기 →</a>
+              </div>
+            </div>
+          `).join('')}}
+        </div>
+      </div>
+    `).join('');
+  }}
+
+  function formatDate(dateStr) {{
+    const d = new Date(dateStr);
+    const days = ['일','월','화','수','목','금','토'];
+    return `${{d.getFullYear()}}년 ${{d.getMonth()+1}}월 ${{d.getDate()}}일 (${{days[d.getDay()]}})`;
+  }}
+
+  function escHtml(str) {{
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+              .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }}
+
+  const btn = document.getElementById('backToTop');
+  window.addEventListener('scroll', () => {{
+    btn.classList.toggle('visible', window.scrollY > 300);
+  }});
+
+  loadData();
+</script>
 </body>
 </html>"""
 
 
 def push_to_github(sections: dict):
-    """뉴스 HTML을 GitHub Pages에 업로드"""
+    """GitHub Pages 업데이트: index.html + logo.png 복사"""
     today_str = datetime.now(KST).strftime("%Y-%m-%d")
 
-    # 1) index.html (최신 브리핑)
-    index_html = build_github_page_html(sections)
+    # 1) index.html (동적 아카이브 페이지 — sections 불필요)
+    index_html = build_github_page_html()
     _push_file_to_github(
         "index.html",
         index_html.encode("utf-8"),
-        f"[briefing] {today_str} 최신 브리핑 업데이트",
+        f"[pages] {today_str} index.html 업데이트",
     )
 
-    # 2) 날짜별 아카이브 HTML
-    archive_path = f"archive/{today_str}.html"
-    _push_file_to_github(
-        archive_path,
-        index_html.encode("utf-8"),
-        f"[archive] {today_str}",
-    )
+    # 2) logo.png — ssi-hr-news 레포에서 복사 (없으면 건너뜀)
+    logo_url = "https://raw.githubusercontent.com/goodwon89/ssi-hr-news/main/logo.png"
+    try:
+        req = urllib.request.Request(logo_url, headers={"User-Agent": "CEO-Morning-Briefing"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            logo_bytes = resp.read()
+        _push_file_to_github("logo.png", logo_bytes, "[logo] 상상인그룹 로고 업데이트")
+    except Exception as e:
+        print(f"[logo] 복사 실패(건너뜀): {e}")
 
 
 # ─────────────────────────────────────────────
